@@ -1,0 +1,213 @@
+name: "deseq2"
+namespace: "differential_expression"
+version: "build_main"
+authors:
+- name: "DILImap team"
+  email: "DILImap@cellarity.com"
+  roles:
+  - "author"
+  - "maintainer"
+  info:
+    github: "VolkerBergen"
+argument_groups:
+- name: "Inputs"
+  arguments:
+  - type: "file"
+    name: "--input"
+    description: "AnnData HDF5 file with raw expression data in .X and relevant design\
+      \ parameters as .obs columns"
+    info: null
+    example:
+    - "input.h5ad"
+    must_exist: true
+    create_parent: true
+    required: true
+    direction: "input"
+    multiple: false
+    multiple_sep: ";"
+- name: "Outputs"
+  arguments:
+  - type: "file"
+    name: "--output"
+    description: "AnnData with differential expression results."
+    info: null
+    example:
+    - "output.h5ad"
+    must_exist: true
+    create_parent: true
+    required: true
+    direction: "output"
+    multiple: false
+    multiple_sep: ";"
+- name: "Differential expression arguments"
+  arguments:
+  - type: "string"
+    name: "--design"
+    description: "List of terms in the formula. Formula is `'~'+'+'.join(design)`.\
+      \ See https://hbctraining.github.io/DGE_workshop_salmon_online/lessons/04a_design_formulas.html#design-formula."
+    info: null
+    default:
+    - "treatment"
+    - "plate"
+    required: false
+    direction: "input"
+    multiple: true
+    multiple_sep: ";"
+  - type: "string"
+    name: "--pert_name"
+    description: "The name of the perturbation to be modeled"
+    info: null
+    required: false
+    direction: "input"
+    multiple: false
+    multiple_sep: ";"
+  - type: "string"
+    name: "--control_name"
+    description: "Level of adata.obs[pert_col] to use as background signal, e.g. 'DMSO'."
+    info: null
+    required: false
+    direction: "input"
+    multiple: false
+    multiple_sep: ";"
+  - type: "string"
+    name: "--pert_col"
+    description: "Column of adata.obs indicating perturbation (or level to be contrasted)."
+    info: null
+    required: false
+    direction: "input"
+    multiple: false
+    multiple_sep: ";"
+resources:
+- type: "r_script"
+  path: "script.R"
+  is_executable: true
+description: "Interface to run DESeq2"
+test_resources:
+- type: "python_script"
+  path: "test.py"
+  is_executable: true
+- type: "file"
+  path: "resources_test"
+info: null
+status: "enabled"
+license: "Proprietary"
+links:
+  repository: "https://github.com/Cellarity/viash-components"
+  docker_registry: "840419303237.dkr.ecr.us-east-1.amazonaws.com"
+runners:
+- type: "executable"
+  id: "executable"
+  docker_setup_strategy: "ifneedbepullelsecachedbuild"
+- type: "nextflow"
+  id: "nextflow"
+  directives:
+    tag: "$id"
+  auto:
+    simplifyInput: true
+    simplifyOutput: false
+    transcript: false
+    publish: false
+  config:
+    labels:
+      mem1gb: "memory = 1000000000.B"
+      mem2gb: "memory = 2000000000.B"
+      mem5gb: "memory = 5000000000.B"
+      mem10gb: "memory = 10000000000.B"
+      mem20gb: "memory = 20000000000.B"
+      mem50gb: "memory = 50000000000.B"
+      mem100gb: "memory = 100000000000.B"
+      mem200gb: "memory = 200000000000.B"
+      mem500gb: "memory = 500000000000.B"
+      mem1tb: "memory = 1000000000000.B"
+      mem2tb: "memory = 2000000000000.B"
+      mem5tb: "memory = 5000000000000.B"
+      mem10tb: "memory = 10000000000000.B"
+      mem20tb: "memory = 20000000000000.B"
+      mem50tb: "memory = 50000000000000.B"
+      mem100tb: "memory = 100000000000000.B"
+      mem200tb: "memory = 200000000000000.B"
+      mem500tb: "memory = 500000000000000.B"
+      mem1gib: "memory = 1073741824.B"
+      mem2gib: "memory = 2147483648.B"
+      mem4gib: "memory = 4294967296.B"
+      mem8gib: "memory = 8589934592.B"
+      mem16gib: "memory = 17179869184.B"
+      mem32gib: "memory = 34359738368.B"
+      mem64gib: "memory = 68719476736.B"
+      mem128gib: "memory = 137438953472.B"
+      mem256gib: "memory = 274877906944.B"
+      mem512gib: "memory = 549755813888.B"
+      mem1tib: "memory = 1099511627776.B"
+      mem2tib: "memory = 2199023255552.B"
+      mem4tib: "memory = 4398046511104.B"
+      mem8tib: "memory = 8796093022208.B"
+      mem16tib: "memory = 17592186044416.B"
+      mem32tib: "memory = 35184372088832.B"
+      mem64tib: "memory = 70368744177664.B"
+      mem128tib: "memory = 140737488355328.B"
+      mem256tib: "memory = 281474976710656.B"
+      mem512tib: "memory = 562949953421312.B"
+      cpu1: "cpus = 1"
+      cpu2: "cpus = 2"
+      cpu5: "cpus = 5"
+      cpu10: "cpus = 10"
+      cpu20: "cpus = 20"
+      cpu50: "cpus = 50"
+      cpu100: "cpus = 100"
+      cpu200: "cpus = 200"
+      cpu500: "cpus = 500"
+      cpu1000: "cpus = 1000"
+  debug: false
+  container: "docker"
+engines:
+- type: "docker"
+  id: "docker"
+  image: "rocker/r2u:22.04"
+  namespace_separator: "/"
+  setup:
+  - type: "apt"
+    packages:
+    - "procps"
+    - "python3-pip"
+    - "python-is-python3"
+    - "python3-dev"
+    interactive: false
+  - type: "python"
+    user: false
+    packages:
+    - "anndata"
+    - "numpy < 2"
+    upgrade: true
+  - type: "r"
+    cran:
+    - "dplyr"
+    - "anndata"
+    bioc:
+    - "DESeq2"
+    - "apeglm"
+    bioc_force_install: false
+  entrypoint: []
+  cmd: null
+- type: "native"
+  id: "native"
+build_info:
+  config: "dilimap/config.vsh.yaml"
+  runner: "executable"
+  engine: "docker|native"
+  output: "dilimap"
+  executable: "dilimap/deseq2_exec"
+  viash_version: "0.9.0"
+  git_commit: "d1077c6391c3e5c8fbfce7d3a60fb9caeec1b8a4"
+  git_remote: "https://github.com/Cellarity/viash-components"
+package_config:
+  name: "viash_components"
+  version: "build_main"
+  description: "Build Docker-backed components using Viash"
+  info: null
+  viash_version: "0.9.0"
+  source: "src"
+  target: "viash_components"
+  license: "Proprietary"
+  links:
+    repository: "https://github.com/Cellarity/viash-components"
+    docker_registry: "840419303237.dkr.ecr.us-east-1.amazonaws.com"

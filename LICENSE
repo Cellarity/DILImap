@@ -1,0 +1,60 @@
+DILImap LICENSE AGREEMENT
+
+Copyright (c) 2025, Cellarity
+
+This work contains:
+- Source code (https://github.com/Cellarity/DILImap)
+- Notebooks (https://github.com/Cellarity/DILImap_reproducibility)
+- Data accessed via the DILImap API from Amazon S3
+
+===========================
+1. LICENSE FOR CODE (BSD-3-Clause with Academic Restriction)
+===========================
+
+Redistribution and use in source and binary forms, with or without modification, are permitted for academic and
+non-commercial research purposes, provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions, and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions, and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names
+   of its contributors may be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+4. **Commercial use of this software is strictly prohibited without prior written permission.**
+
+   For commercial licensing, please contact: DILImap@cellarity.com
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+===========================
+2. LICENSE FOR DATA (CC BY-NC 4.0-Inspired, Custom Terms)
+===========================
+
+The dataset accessed via the DILImap API or hosted in the associated S3 bucket is made available for academic,
+non-commercial research use only.
+
+You MAY:
+- Use the data for non-commercial academic research
+- Analyze the data and publish results
+- Reference or cite DILImap in publications
+
+You MAY NOT:
+- Use the data for any commercial purpose, including internal use at a for-profit company
+- Redistribute or repackage the raw data without permission
+
+Commercial licensing is available. To inquire, contact: DILImap@cellarity.com
+
+By downloading or using the data, you agree to these terms.

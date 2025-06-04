@@ -1,0 +1,6 @@
+sphinx>=2.0
+ipykernel
+nbsphinx<0.9.0
+nbclean
+sphinx_rtd_theme
+sphinx_autodoc_typehints

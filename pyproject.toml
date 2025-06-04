@@ -1,0 +1,100 @@
+[project]
+name = 'DILImap'
+authors = [
+    { name = 'Volker Bergen', email = 'vbergen@cellarity.com' }
+]
+project.urls.Documentation = 'https://docs.cellarity.com/projects/DILImap/'
+project.urls.Source = 'https://github.com/Cellarity/DILImap'
+readme = 'README.rst'
+classifiers = [
+    'License :: Other/Proprietary License',
+    'Private :: Do Not Upload',  # Prevent accidental PyPI upload
+]
+dynamic = ['version']
+requires-python = '>=3.8'
+dependencies = [
+    'numpy<2.0.0',  # due to numba
+    'anndata>=0.10.7',
+    'scikit-learn>=1.4.0,<1.5.0',
+    'pandas',
+    'scipy',
+    'matplotlib',
+    'seaborn',
+    'natsort',
+    'dask',
+    'distributed',
+    'quilt3',
+    'boto3',
+    'python-dotenv',
+    'gseapy',
+    'chembl_webresource_client',
+]
+
+[project.optional-dependencies]
+dev = [
+    'ruff',
+    'pre-commit',
+]
+test = [
+    'pytest',
+    'pytest-cov',
+    'pyflakes',
+    'flake8',
+    'black',
+]
+doc = [
+    'sphinx<7',
+    'sphinx-rtd-theme',
+    'ipykernel',
+    'nbsphinx',
+    'nbconvert',
+    'nbclean',
+    'sphinx-jinja',
+    'sphinx_autodoc_typehints',
+    'readthedocs-sphinx-search',
+    'sphinx_rtd_theme',
+    'pygments',
+    'ipykernel',
+    # Pandoc is required and must be installed separately using `conda install -c conda-forge pandoc`
+]
+build = [
+    'build',
+    'twine',
+]
+
+[tool.hatch.version]
+source = 'vcs'
+fallback-version = '0.1'  # Use this if .git is missing
+[tool.hatch.build.hooks.vcs]
+version-file = 'dilimap/_version.py'
+[tool.hatch.build.targets.wheel]
+packages = ['dilimap']
+
+[build-system]
+requires = ['hatchling', 'hatch-vcs', 'setuptools-scm>=7']
+build-backend = 'hatchling.build'
+
+[tool.pytest.ini_options]
+python_files = 'test_*.py'
+
+[tool.ruff]
+# Maximum line length
+line-length = 100
+
+[tool.ruff.lint]
+# Select the rules to apply
+select = ['B', 'C', 'E', 'F', 'W', 'B9']
+
+ignore = [
+    'B007',  # Loop control variable not used within loop body
+    'E501',  # Line length is handled separately
+    'E203',  # Whitespace before ':' handled by black
+    'E741',  # ambiguous variable name
+    'C901',  # Function is too complex
+    'F403',  # Unable to detect undefined names
+    'B023',  # Function definition does not bind loop variable
+    'B008',  # Do not perform function call in argument defaults
+]
+
+[tool.ruff.format]
+quote-style = "single"
