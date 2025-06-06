@@ -13,12 +13,15 @@ def setup(app):
         last_build_time = 0
     # iterate through all source files and check time stemps
     cwd = Path.cwd()
-    paths = sorted([
-        f for f in cwd.parent.glob('**/*')
-        if f.suffix in {'.ipynb', '.rst'}
-        and 'ipynb_checkpoints' not in f.as_posix()
-        and cwd not in f.parents  # do not consider files in cwd
-    ])
+    paths = sorted(
+        [
+            f
+            for f in cwd.parent.glob('**/*')
+            if f.suffix in {'.ipynb', '.rst'}
+            and 'ipynb_checkpoints' not in f.as_posix()
+            and cwd not in f.parents  # do not consider files in cwd
+        ]
+    )
 
     print('cleaning outdated notebooks:')
     for f in paths:
@@ -26,8 +29,7 @@ def setup(app):
         if time > last_build_time:
             print('   ', f)
             # new file is same file but in 'docs/' sub-directory
-            newfile = Path(f.as_posix().replace(
-                cwd.parent.as_posix(), cwd.as_posix()))
+            newfile = Path(f.as_posix().replace(cwd.parent.as_posix(), cwd.as_posix()))
             os.makedirs(newfile.parent, exist_ok=True)
             if f.suffix == '.rst':  # copy file
                 Path(newfile).write_text(f.read_text())

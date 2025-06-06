@@ -23,12 +23,12 @@ def qc_metrics(adata):
         - `pct_rRNA`: Percentage of ribosomal RNA per cell.
 
     """
-    var_mito = adata.var_names.str.startswith("MT-")
-    var_ribo = adata.var_names.str.startswith(("RPS","RPL"))
+    var_mito = adata.var_names.str.startswith('MT-')
+    var_ribo = adata.var_names.str.startswith(('RPS', 'RPL'))
 
     adata.obs['log_totalRNA'] = np.log10(np.ravel(adata.X.sum(1)))
-    adata.obs["pct_mtRNA"] = adata[:, var_mito].X.sum(1) / adata.X.sum(1) * 100
-    adata.obs["pct_rRNA"] = adata[:, var_ribo].X.sum(1) / adata.X.sum(1) * 100
+    adata.obs['pct_mtRNA'] = adata[:, var_mito].X.sum(1) / adata.X.sum(1) * 100
+    adata.obs['pct_rRNA'] = adata[:, var_ribo].X.sum(1) / adata.X.sum(1) * 100
 
     print("Added the following to `adata.obs`: ['log_totalRNA', 'pct_mtRNA', 'pct_rRNA']")
 
@@ -55,7 +55,9 @@ def qc_cross_rep_correlation(adata, group_key='CMPD_DOSE', plate_key='PLATE_NAME
         adata.obs['tmp_plate_key'] = ''
 
     group_plate_key = f'{group_key}_{plate_key}_tmp'
-    adata.obs[group_plate_key] = adata.obs[group_key].astype(str) + '_' + adata.obs[plate_key].astype(str)
+    adata.obs[group_plate_key] = (
+        adata.obs[group_key].astype(str) + '_' + adata.obs[plate_key].astype(str)
+    )
 
     write_key1 = 'cross_rep_correlation'
     write_key2 = 'rep_corr_qc_pass'
@@ -73,8 +75,12 @@ def qc_cross_rep_correlation(adata, group_key='CMPD_DOSE', plate_key='PLATE_NAME
         df_corr.index = df_corr.columns = data.obs[group_plate_key]
         np.fill_diagonal(df_corr.values, np.nan)
 
-        df_corr_mean = df_corr.groupby(df_corr.index, sort=False).mean().T.groupby(df_corr.index,
-                                                                                   sort=False).mean()
+        df_corr_mean = (
+            df_corr.groupby(df_corr.index, sort=False)
+            .mean()
+            .T.groupby(df_corr.index, sort=False)
+            .mean()
+        )
         # Create a dataframe to store replicate correlations for each compound
         _, n_replicates = np.unique(df_corr.index, return_counts=True)
 
@@ -84,10 +90,10 @@ def qc_cross_rep_correlation(adata, group_key='CMPD_DOSE', plate_key='PLATE_NAME
         # Populate replicate correlation dataframe with the max correlated rep for each cmpd
         for cmpd in df_corr_mean.columns:
             corr_vals = df_corr.loc[cmpd, cmpd].max(1).values
-            df_corr_rep.iloc[df_corr_rep.index.get_loc(cmpd), :len(corr_vals)] = corr_vals
+            df_corr_rep.iloc[df_corr_rep.index.get_loc(cmpd), : len(corr_vals)] = corr_vals
 
         # Compute the standard deviation of the replicate correlations across all compounds
-        std = np.nanstd(np.ravel(df_corr_rep.iloc[:, :min(n_replicates)]))
+        std = np.nanstd(np.ravel(df_corr_rep.iloc[:, : min(n_replicates)]))
 
         # Handle the case where there are more than 4 replicates, which applies to DMSO
         for cmpd in df_corr_mean.columns:
@@ -97,15 +103,19 @@ def qc_cross_rep_correlation(adata, group_key='CMPD_DOSE', plate_key='PLATE_NAME
                 n_top = int(len(df_corr_sub) / 2) + 1
 
                 corr_vals = np.nanmean(np.sort(df_corr_sub, axis=0)[::-1][:n_top], axis=0)
-                df_corr_rep.iloc[df_corr_rep.index.get_loc(cmpd), :len(corr_vals)] = corr_vals
+                df_corr_rep.iloc[df_corr_rep.index.get_loc(cmpd), : len(corr_vals)] = corr_vals
 
             # Store correlation values
             corr_vals = df_corr_rep.loc[cmpd].dropna().values
-            data.obs.loc[data.obs[group_plate_key] == cmpd, write_key1] = corr_vals.astype(np.float32)
+            data.obs.loc[data.obs[group_plate_key] == cmpd, write_key1] = corr_vals.astype(
+                np.float32
+            )
 
             # Flag entries as invalid if their correlation is below the threshold
             corr_thresh = max(np.median(corr_vals) - 3 * std, min_corr)
-            data.obs.loc[data.obs[group_plate_key] == cmpd, write_key2] = (corr_vals > corr_thresh).astype(bool)
+            data.obs.loc[data.obs[group_plate_key] == cmpd, write_key2] = (
+                corr_vals > corr_thresh
+            ).astype(bool)
 
         # Update the global adata.obs with the results from the current plate
         adata.obs.loc[idx, write_key1] = data.obs[write_key1]
@@ -118,14 +128,14 @@ def qc_cross_rep_correlation(adata, group_key='CMPD_DOSE', plate_key='PLATE_NAME
 
 
 def deseq2(
-        adata,
-        pert_name_col,
-        other_pert_cols=(),
-        condition_cols=(),
-        dmso_pert_name='DMSO',
-        dask_client=None,
-        tempdir_prefix=None,
-        **kwargs
+    adata,
+    pert_name_col,
+    other_pert_cols=(),
+    condition_cols=(),
+    dmso_pert_name='DMSO',
+    dask_client=None,
+    tempdir_prefix=None,
+    **kwargs,
 ):
     """
     Runs DESeq2 for differential expression signatures across perturbations.
@@ -175,7 +185,7 @@ def deseq2(
         dmso_pert_name=dmso_pert_name,
         dask_client=dask_client,
         tempdir_prefix=tempdir_prefix,
-        **kwargs
+        **kwargs,
     )
     # Group DESeq2 results by perturbation keys
     keys = [pert_name_col] + list(other_pert_cols)
@@ -191,7 +201,12 @@ def deseq2(
 
     # Create crosstabs for each DESeq2 metric
     index = [df_results[k] for k in keys]
-    crosstab_args = dict(index=index, columns=df_results.gene, aggfunc=np.mean, dropna=False)
+    crosstab_args = {
+        'index': index,
+        'columns': df_results.gene,
+        'aggfunc': np.mean,
+        'dropna': False,
+    }
 
     PVL = pd.crosstab(values=df_results.pvalue, **crosstab_args)
     FDR = pd.crosstab(values=df_results.padj, **crosstab_args)
@@ -237,7 +252,7 @@ def pathway_signatures(df, pval_thresh=0.05, gene_sets='WikiPathways_2019_Human'
         - `FDR`: Adjusted p-values (FDR).
         - `combined_score`: Enrichr's combined score.
     """
-    gseapy_kwargs = dict(gene_sets=gene_sets, organism='human')
+    gseapy_kwargs = {'gene_sets': gene_sets, 'organism': 'human'}
 
     if len(df) == 1:
         gene_list = list(df.columns[np.ravel(df) < 0.05])
@@ -264,14 +279,14 @@ def pathway_signatures(df, pval_thresh=0.05, gene_sets='WikiPathways_2019_Human'
                         break  # Break out of the while loop if the operation is successful
                     except Exception as e:
                         attempts += 1
-                        print(f"Attempt {attempts} failed with error: {e}")
+                        print(f'Attempt {attempts} failed with error: {e}')
                         time.sleep(1)  # Optional: wait for 1 second before retrying
                         if attempts >= 5:
-                            print(f"Failed after {attempts} attempts for index {i}.")
+                            print(f'Failed after {attempts} attempts for index {i}.')
 
         df_crosstabs = {}
 
-        kwargs = dict(index=res['obs_index'], columns=res['Term'], aggfunc='first')
+        kwargs = {'index': res['obs_index'], 'columns': res['Term'], 'aggfunc': 'first'}
 
         df_crosstabs['pval'] = pd.crosstab(values=res['P-value'], **kwargs)
         df_crosstabs['FDR'] = pd.crosstab(values=res['Adjusted P-value'], **kwargs)
@@ -284,7 +299,9 @@ def pathway_signatures(df, pval_thresh=0.05, gene_sets='WikiPathways_2019_Human'
         missing_idx = [i for i in range(len(df)) if i not in df_crosstabs['pval'].index]
 
         for k in df_crosstabs.keys():
-            df_crosstabs[k] = pd.concat([df_crosstabs[k], pd.DataFrame(index=missing_idx)]).sort_index()
+            df_crosstabs[k] = pd.concat(
+                [df_crosstabs[k], pd.DataFrame(index=missing_idx)]
+            ).sort_index()
 
         data = ad.AnnData(df_crosstabs['DES'].set_index(df.index))
 

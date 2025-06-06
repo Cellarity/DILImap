@@ -3,6 +3,7 @@ import pandas as pd
 from chembl_webresource_client.new_client import new_client
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+
 def chembl(molecule_name=None, smiles=None):
     """
     Fetch compound information from ChEMBL.
@@ -23,7 +24,9 @@ def chembl(molecule_name=None, smiles=None):
         results = []
 
         with ThreadPoolExecutor(max_workers=16) as executor:
-            futures = {executor.submit(_fetch_chembl_entry, name): name for name in list(molecule_name)}
+            futures = {
+                executor.submit(_fetch_chembl_entry, name): name for name in list(molecule_name)
+            }
             for future in as_completed(futures):
                 result = future.result()
                 if result:
@@ -31,7 +34,7 @@ def chembl(molecule_name=None, smiles=None):
 
     df_res = pd.DataFrame(results)
     if 'molecule_chembl_id' in df_res.columns:
-        df_res = df_res.set_index("molecule_chembl_id")
+        df_res = df_res.set_index('molecule_chembl_id')
 
     return df_res
 
@@ -65,7 +68,7 @@ def drug_warnings(chembl_id, aggregate=None):
     if aggregate:
         for k in ['warning_id', 'warning_refs', 'warning_year']:
             if k in df.columns:
-                df.pop(k);
+                df.pop(k)
 
         withdrawn = df[df.warning_type == 'Withdrawn']
         black_box = df[df.warning_type == 'Black Box Warning']
@@ -84,10 +87,12 @@ def drug_warnings(chembl_id, aggregate=None):
 
 def _fetch_chembl_entry(molecule_name=None, smiles=None):
     try:
-        if molecule_name and molecule_name.upper().startswith("CHEMBL"):
+        if molecule_name and molecule_name.upper().startswith('CHEMBL'):
             res = new_client.molecule.filter(molecule_chembl_id=molecule_name)
         elif molecule_name:
-            res = new_client.molecule.filter(molecule_synonyms__molecule_synonym__iexact=molecule_name)
+            res = new_client.molecule.filter(
+                molecule_synonyms__molecule_synonym__iexact=molecule_name
+            )
         elif smiles:
             res = new_client.molecule.filter(molecule_structures__canonical_smiles=smiles)
         else:
@@ -103,14 +108,14 @@ def _fetch_chembl_entry(molecule_name=None, smiles=None):
             entry['molecule_name'] = molecule_name
 
         # Flatten nested fields safely
-        entry['smiles'] = (entry.get("molecule_structures") or {}).get("canonical_smiles", np.nan)
-        entry['mw'] = (entry.get("molecule_properties") or {}).get("full_mwt", np.nan)
-        entry['alogp'] = (entry.get("molecule_properties") or {}).get("alogp", np.nan)
+        entry['smiles'] = (entry.get('molecule_structures') or {}).get('canonical_smiles', np.nan)
+        entry['mw'] = (entry.get('molecule_properties') or {}).get('full_mwt', np.nan)
+        entry['alogp'] = (entry.get('molecule_properties') or {}).get('alogp', np.nan)
 
         # Join all list fields into a string
         for key, value in entry.items():
             if isinstance(value, list):
-                entry[key] = "; ".join(str(v) for v in value if v is not None)
+                entry[key] = '; '.join(str(v) for v in value if v is not None)
 
         # Remove large or nested fields you don't need
         for key in [
@@ -119,12 +124,12 @@ def _fetch_chembl_entry(molecule_name=None, smiles=None):
             'molecule_synonyms',
             'molecule_hierarchy',
             'biotherapeutic',
-            'cross_references'
+            'cross_references',
         ]:
             entry.pop(key, None)
 
         return entry
 
     except Exception as e:
-        print(f"Error processing {molecule_name}: {e}")
+        print(f'Error processing {molecule_name}: {e}')
         return None
