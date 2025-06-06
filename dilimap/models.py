@@ -279,20 +279,22 @@ class ToxPredictor:
         """Maps the input data to the model features and handles missing values."""
         # Convert AnnData to DataFrame if needed
         X = X.to_df() if isinstance(X, ad.AnnData) else X.copy()
+
         if hasattr(X, 'columns'):
             # Subset the test data to only the columns available in the training data
             cols = X.columns[X.columns.isin(self.features)]
             X_new = X[cols].copy()
 
-            # Find columns that are in training data but missing in the test data
+            # Identify missing and additional columns
             missing_cols = self.features.difference(X.columns)
             additional_cols = X.columns.difference(self.features)
 
-            # Add the missing columns to X_new with values set to zero
-            for col in missing_cols:
-                X_new[col] = 0
+            # Add missing columns in a single concat operation to avoid fragmentation
+            if missing_cols.any():
+                X_missing = pd.DataFrame(0, index=X_new.index, columns=missing_cols)
+                X_new = pd.concat([X_new, X_missing], axis=1)
 
-            # Reorder the columns in X_new to match the training data column order
+            # Reorder columns to match training data
             X_new = X_new[self.features]
 
             if len(missing_cols) > 0:
@@ -315,8 +317,8 @@ class ToxPredictor:
             if len(X.T) != len(self.features):
                 raise ValueError('X must have the same number of features as the training data.')
 
+        # Ensure a DataFrame and fill NaNs
         X = pd.DataFrame(X)
-
         if X.isna().any().any():
             X.fillna(0, inplace=True)
             print('Your data contains missing values (NaNs) which have been filled with zeros.')

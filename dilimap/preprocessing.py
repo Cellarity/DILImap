@@ -283,7 +283,6 @@ def pathway_signatures(df, pval_thresh=0.05, gene_sets='WikiPathways_2019_Human'
                         time.sleep(1)  # Optional: wait for 1 second before retrying
                         if attempts >= 5:
                             print(f'Failed after {attempts} attempts for index {i}.')
-
         df_crosstabs = {}
 
         kwargs = {'index': res['obs_index'], 'columns': res['Term'], 'aggfunc': 'first'}
