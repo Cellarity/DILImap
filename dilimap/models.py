@@ -290,7 +290,7 @@ class ToxPredictor:
             additional_cols = X.columns.difference(self.features)
 
             # Add missing columns in a single concat operation to avoid fragmentation
-            if missing_cols.any():
+            if not missing_cols.empty:
                 X_missing = pd.DataFrame(0, index=X_new.index, columns=missing_cols)
                 X_new = pd.concat([X_new, X_missing], axis=1)
 
