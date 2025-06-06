@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
-from chembl_webresource_client.new_client import new_client
+import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# Suppress deprecation warning caused by chembl_webresource_client's use of pkg_resources,
+# which is scheduled for removal from setuptools in late 2025.
+warnings.filterwarnings('ignore', category=UserWarning, module='chembl_webresource_client')
 
 
 def chembl(molecule_name=None, smiles=None):
@@ -50,6 +54,7 @@ def drug_warnings(chembl_id, aggregate=None):
     Returns:
     pd.DataFrame: Drug warning information indexed by ChEMBL ID.
     """
+    from chembl_webresource_client.new_client import new_client
 
     res = new_client.drug_warning.filter()
 
@@ -86,6 +91,8 @@ def drug_warnings(chembl_id, aggregate=None):
 
 
 def _fetch_chembl_entry(molecule_name=None, smiles=None):
+    from chembl_webresource_client.new_client import new_client
+
     try:
         if molecule_name and molecule_name.upper().startswith('CHEMBL'):
             res = new_client.molecule.filter(molecule_chembl_id=molecule_name)
