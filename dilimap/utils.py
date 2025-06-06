@@ -22,10 +22,11 @@ def platemap(data, value_key, batch=None):
 
     df_batches = pd.DataFrame()
     for batch_i in batches:
-
         adata_sub = data if batch_i == '' else data[data.obs[batch] == batch_i]
 
-        aggfunc = ','.join if all([isinstance(item, str) for item in adata_sub.obs[value_key]]) else 'mean'
+        aggfunc = (
+            ','.join if all(isinstance(item, str) for item in adata_sub.obs[value_key]) else 'mean'
+        )
         index, columns = adata_sub.obs['WELL_ROW'], adata_sub.obs['WELL_COL']
         df_batch = pd.crosstab(index, columns, values=adata_sub.obs[value_key], aggfunc=aggfunc)
         df_batch = df_batch[natsorted(pd.unique(adata_sub.obs['WELL_COL']))]
@@ -65,10 +66,14 @@ def groupby(data, key, aggfunc='mean'):
     nunique_per_group = df.groupby(key, observed=False).nunique()
 
     # Identify columns with a one-to-one mapping to `key`
-    one_to_one_cols = [k for k in all_cols if k in nunique_per_group and nunique_per_group[k].max() == 1]
+    one_to_one_cols = [
+        k for k in all_cols if k in nunique_per_group and nunique_per_group[k].max() == 1
+    ]
 
     # Separate numerical columns that need aggregation
-    multi_val_cols = [k for k in numerical_cols if k in nunique_per_group and nunique_per_group[k].max() > 1]
+    multi_val_cols = [
+        k for k in numerical_cols if k in nunique_per_group and nunique_per_group[k].max() > 1
+    ]
 
     # Group categorical one-to-one columns using `first()`
     grouped_cat_df = df.groupby(key, observed=False)[one_to_one_cols].first()

@@ -50,7 +50,8 @@ def model_all_perts(
 
     # Extract all unique perturbations excluding DMSO
     perts = [
-        x for x in {tuple(x[1:]) for x in adata.obs.loc[:, pert_cols].itertuples()}
+        x
+        for x in {tuple(x[1:]) for x in adata.obs.loc[:, pert_cols].itertuples()}
         if x[0] != dmso_pert_name
     ]
 
@@ -85,8 +86,14 @@ def model_all_perts(
     # Create parallel computation tasks
     outputs = [
         model_pert_parallel(
-            adata, pert[0], list(pert[1:]), pert_name_col, other_pert_cols,
-            dmso_pert_name=dmso_pert_name, condition_cols=condition_cols, **kwargs,
+            adata,
+            pert[0],
+            list(pert[1:]),
+            pert_name_col,
+            other_pert_cols,
+            dmso_pert_name=dmso_pert_name,
+            condition_cols=condition_cols,
+            **kwargs,
         )
         for pert in perts
     ]

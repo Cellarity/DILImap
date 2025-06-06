@@ -5,17 +5,16 @@ from sys import stdout
 from time import time as get_time
 
 
-def _write_log(*msg, end="\n"):
+def _write_log(*msg, end='\n'):
     print(*msg, end=end)
 
 
 def print_version():
     from . import __version__
 
-    date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    date_str = datetime.now().strftime('%Y-%m-%d %H:%M')
     _write_log(
-        f"Running dilimap {__version__} "
-        f"(python {python_version()}) on {date_str}.",
+        f'Running dilimap {__version__} (python {python_version()}) on {date_str}.',
     )
 
 
@@ -30,15 +29,15 @@ class ProgressReporter:
         self.count += 1
         self.timestamp = get_time()
         percent = int(self.count * 100 / self.total)
-        stdout.write(f"\r... {percent}%")
+        stdout.write(f'\r... {percent}%')
         stdout.flush()
 
     def finish(self):
-        stdout.write("\r")
+        stdout.write('\r')
         stdout.flush()
 
 
-def profiler(command, filename="profile.stats", n_stats=10):
+def profiler(command, filename='profile.stats', n_stats=10):
     """Profiler for a python program (cProfile)
 
     Stats can be visualized with `!snakeviz profile.stats`.
@@ -52,5 +51,5 @@ def profiler(command, filename="profile.stats", n_stats=10):
     import pstats
 
     cProfile.run(command, filename)
-    stats = pstats.Stats(filename).strip_dirs().sort_stats("time")
+    stats = pstats.Stats(filename).strip_dirs().sort_stats('time')
     return stats.print_stats(n_stats or {})

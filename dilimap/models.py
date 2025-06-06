@@ -18,7 +18,8 @@ from .utils import groupby, crosstab
 
 # Dictionary of all available classifiers in scikit-learn
 CLF = {
-    name: estimator for name, estimator in all_estimators()
+    name: estimator
+    for name, estimator in all_estimators()
     if issubclass(estimator, ClassifierMixin)
 }
 
@@ -46,19 +47,20 @@ class ToxPredictor:
         safety_margins = model.compute_safety_margin(data, 'compound_name', 'dose_uM', 'Cmax_uM')
 
     """
+
     def __init__(
         self,
         version='v2',
         model=None,
         multioutput=None,
-        model_params=dict(),
+        model_params=None,
         local_filepath=None,
     ):
         """Initializes the ToxPredictor model."""
         # Initialize general classifier attributes
         self.model_name = model
         self.multioutput = multioutput
-        self.model_params = model_params
+        self.model_params = model_params or {}
         self.cv_models = None
 
         # Initialize ToxPredictor attributes
@@ -74,27 +76,29 @@ class ToxPredictor:
         elif version:
             self._load_from_s3()
         else:
-            raise ValueError("Please provide one of the following: version, model or local_filepath")
+            raise ValueError(
+                'Please provide one of the following: version, model or local_filepath'
+            )
 
     def _load_from_s3(self):
         """Loads the pre-trained model from S3."""
         try:
             model = read(f'ToxPredictor_{self.version}.joblib', package_name='public/models')
             self._validate_and_update(model)
-        except Exception:
-            raise RuntimeError("Failed to load pretrained model.")
+        except (FileNotFoundError, RuntimeError) as e:
+            raise RuntimeError('Failed to load pretrained model.') from e
 
     def _load_from_local(self, filepath):
         """Loads the pre-trained model from a local file."""
         if not filepath:
-            raise ValueError("No local filepath provided.")
+            raise ValueError('No local filepath provided.')
         model = joblib.load(filepath)
         self._validate_and_update(model)
 
     def _validate_and_update(self, model):
         """Validates and updates the current instance with the loaded model."""
         if not isinstance(model, ToxPredictor):
-            raise ValueError("The file does not contain a ToxPredictor object.")
+            raise ValueError('The file does not contain a ToxPredictor object.')
         self.__dict__.update(model.__dict__)
 
     def _initialize_model(self):
@@ -105,7 +109,7 @@ class ToxPredictor:
             'logreg': 'LogisticRegression',
             'svc': 'SVC',
             'mlp': 'MLPClassifier',
-            'gb': 'GradientBoostingClassifier'
+            'gb': 'GradientBoostingClassifier',
         }
 
         if self.model_name in model_map:
@@ -120,9 +124,12 @@ class ToxPredictor:
         # Set default hyperparameters if none are provided
 
         if self.model_name == 'RandomForestClassifier' and not self.model_params:
-            self.model_params = dict(
-                n_estimators=100, max_depth=2, min_samples_split=2, min_samples_leaf=1
-            )
+            self.model_params = {
+                'n_estimators': 100,
+                'max_depth': 2,
+                'min_samples_split': 2,
+                'min_samples_leaf': 1,
+            }
 
         # Initialize the model with the specified parameters
         self.model = CLF[self.model_name](**self.model_params)
@@ -146,7 +153,10 @@ class ToxPredictor:
         # Fill NaN values
         if self._X.isna().any().any():
             self._X.fillna(0, inplace=True)
-            warn('Your data contains missing values (NaNs), which have been filled with zeros.')
+            warn(
+                'Your data contains missing values (NaNs), which have been filled with zeros.',
+                stacklevel=2,
+            )
 
     @property
     def estimators(self):
@@ -203,9 +213,13 @@ class ToxPredictor:
 
         # Perform cross-validation and store the models and indices
         self.cv_models = cross_validate(
-            self.model, self._X, self._y,
+            self.model,
+            self._X,
+            self._y,
             cv=group_kfold.split(self._X, self._y, groups),
-            scoring=scoring, return_estimator=True, return_indices=True
+            scoring=scoring,
+            return_estimator=True,
+            return_indices=True,
         )
 
     def predict_proba_cv(self, estimators=None, rescale=True):
@@ -454,8 +468,14 @@ class ToxPredictor:
         return y_pred[['DILI_probability']]
 
     def compute_safety_margin(
-            self, data, pert_col, dose_col, cmax_col, y_pred_col=None, y_thresh=None,
-            retain_all_cols=None
+        self,
+        data,
+        pert_col,
+        dose_col,
+        cmax_col,
+        y_pred_col=None,
+        y_thresh=None,
+        retain_all_cols=None,
     ):
         """
         Computes the margin of safety (MOS) based on predicted toxicity.
@@ -502,13 +522,17 @@ class ToxPredictor:
         # Calculate MOS (Margin of Safety) for different indicators, with clamping between 1 and 300
         df_obs['MOS_Cmax'] = np.clip(1e4 / df_obs[cmax_col], 1, 300)
 
-        df_obs['MOS_LDH'] = np.clip(
-            np.nan_to_num(df_obs['LDH_IC10_uM'] / df_obs[cmax_col], nan=300), 1, 300
-        ) if 'LDH_IC10_uM' in df_obs.columns else 300
+        df_obs['MOS_LDH'] = (
+            np.clip(np.nan_to_num(df_obs['LDH_IC10_uM'] / df_obs[cmax_col], nan=300), 1, 300)
+            if 'LDH_IC10_uM' in df_obs.columns
+            else 300
+        )
 
-        df_obs['MOS_RNA'] = np.clip(
-            np.nan_to_num(df_obs['RNA_IC50_uM'] / df_obs[cmax_col], nan=300), 1, 300
-        ) if 'RNA_IC50_uM' in df_obs.columns else 300
+        df_obs['MOS_RNA'] = (
+            np.clip(np.nan_to_num(df_obs['RNA_IC50_uM'] / df_obs[cmax_col], nan=300), 1, 300)
+            if 'RNA_IC50_uM' in df_obs.columns
+            else 300
+        )
 
         # Calculate the final MOS by taking the minimum across MOS_Cmax, MOS_LDH, and MOS_RNA
         cols = [k for k in ['MOS_Cmax', 'MOS_LDH', 'MOS_RNA'] if k in df_obs.columns]
@@ -517,7 +541,8 @@ class ToxPredictor:
         # Determine DILI flag based on MOS values
         df_obs['DILI_flag'] = np.select(
             [df_obs['MOS_RNA'] < 80, df_obs['MOS_LDH'] < 80, df_obs['MOS_Cmax'] < 80],
-            ['RNA', 'LDH', 'Cmax'], default='none'
+            ['RNA', 'LDH', 'Cmax'],
+            default='none',
         )
 
         # Group the results by compound_name
@@ -573,10 +598,9 @@ class ToxPredictor:
         DILI_risk_avg = 0
         IC50s = [IC50_uM * -np.log10(0.5), IC50_uM, IC50_uM / -np.log10(0.5)]
         for ic50 in IC50s:
-
             DILI_risk = [
-                (df[df['MOS'] > ic50 / d]['DILI_label'].str.startswith('DILI').sum() / tot_pos) -
-                (df[df['MOS'] < ic50 / d]['DILI_label'].str.startswith('No').sum() / tot_neg)
+                (df[df['MOS'] > ic50 / d]['DILI_label'].str.startswith('DILI').sum() / tot_pos)
+                - (df[df['MOS'] < ic50 / d]['DILI_label'].str.startswith('No').sum() / tot_neg)
                 for d in doses
             ]
 
@@ -618,16 +642,25 @@ class ToxPredictor:
 
         res = {
             'High risk': f'>{cutoffs_uM[2]} μM' if not np.isnan(cutoffs_uM[2]) else 'NA',
-            'Mid-High risk': f'{cutoffs_uM[1]} - {cutoffs_uM[2]} μM' if not np.isnan(
-                cutoffs_uM[1]) else 'NA',
-            'Medium risk': f'{cutoffs_uM[0]} - {cutoffs_uM[1]} μM' if not np.isnan(
-                cutoffs_uM[0]) else 'NA',
-            'Low risk': f'<{cutoffs_uM[0]} μM' if not np.isnan(cutoffs_uM[0]) else '<30uM'
+            'Mid-High risk': f'{cutoffs_uM[1]} - {cutoffs_uM[2]} μM'
+            if not np.isnan(cutoffs_uM[1])
+            else 'NA',
+            'Medium risk': f'{cutoffs_uM[0]} - {cutoffs_uM[1]} μM'
+            if not np.isnan(cutoffs_uM[0])
+            else 'NA',
+            'Low risk': f'<{cutoffs_uM[0]} μM' if not np.isnan(cutoffs_uM[0]) else '<30uM',
         }
         return res
 
     def plot_DILI_dose_regimes(
-            self, compound, dose_range=None, xmax=None, fontsize=14, show_cmax=True, show_legend=True, ax=None
+        self,
+        compound,
+        dose_range=None,
+        xmax=None,
+        fontsize=14,
+        show_cmax=True,
+        show_legend=True,
+        ax=None,
     ):
         """
         Plots the DILI likelihood dose-response curve for a given compound.
@@ -660,22 +693,23 @@ class ToxPredictor:
         for d, (n, regime) in zip([0.8, 0.5, 0.2, 0], dose_regimes.items()):
             ax.axhline(d, label=f'{n} ({regime})', c='red', linestyle='--', linewidth=max(d, 0.1))
 
-        ax.set_yticks([0, 0.2, 0.5, 0.8, 1], ['0%', '20%', '50%', '80%', '100%'], fontsize=fontsize-2)
+        ax.set_yticks(
+            [0, 0.2, 0.5, 0.8, 1], ['0%', '20%', '50%', '80%', '100%'], fontsize=fontsize - 2
+        )
 
         if show_cmax:
             ax.axvline(Cmax_uM, color='g', linestyle='-', linewidth=1, label=f'Cmax ({Cmax_uM} μM)')
-        ax.set_xlabel('Plasma Cmax (μM)', fontsize=fontsize);
-        ax.set_ylabel('Likelihood of DILI risk', fontsize=fontsize);
+        ax.set_xlabel('Plasma Cmax (μM)', fontsize=fontsize)
+        ax.set_ylabel('Likelihood of DILI risk', fontsize=fontsize)
         ax.set_title(compound)
         if xmax is not None:
-            ax.set_xlim(-.5, xmax)
+            ax.set_xlim(-0.5, xmax)
         ax.set_ylim(-0.05, 1.05)
 
         ax.set_xscale('log')
 
         if show_legend:
             ax.legend(fontsize=8, loc='upper left', bbox_to_anchor=(1, 1))
-
 
     @property
     def DILI_pathways(self):
@@ -685,26 +719,34 @@ class ToxPredictor:
             # (pathways that directly contribute to liver cell injury through the formation of
             # reactive metabolites, which can cause cellular damage, necrosis, or apoptosis)
             'Direct Hepatotoxicity': [
-                'Aflatoxin B1 metabolism WP699', 'Arylamine metabolism WP694',
-                'Benzo(a)pyrene metabolism WP696', 'Codeine and Morphine Metabolism WP1604'
+                'Aflatoxin B1 metabolism WP699',
+                'Arylamine metabolism WP694',
+                'Benzo(a)pyrene metabolism WP696',
+                'Codeine and Morphine Metabolism WP1604',
             ],
             # 2. Oxidative and cellular stress
             # (pathways involved in the generation oxidative stress. Excessive oxidative stress can
             # lead to cellular damage, lipid peroxidation, and apoptosis.)
             'Oxidative stress': [
-                'Oxidative Stress WP408', 'Oxidative Damage WP3941', 'Ferroptosis WP4313',
-                'NRF2 pathway WP2884', 'NRF2-ARE regulation WP4357'
+                'Oxidative Stress WP408',
+                'Oxidative Damage WP3941',
+                'Ferroptosis WP4313',
+                'NRF2 pathway WP2884',
+                'NRF2-ARE regulation WP4357',
             ],
             # 3. Drug Metabolism and Detoxification (pathways that metabolize drugs and other
             # xenobiotics. Dysregulation or overload of these pathways can lead to the accumulation
             # of toxic substances and reactive intermediates, causing liver injury.)
             'Metabolism': [
-                'Glucuronidation WP698', 'Oxidation by Cytochrome P450 WP43',
+                'Glucuronidation WP698',
+                'Oxidation by Cytochrome P450 WP43',
                 'Metapathway biotransformation Phase I and II WP702',
                 'Phase I biotransformations, non P450 WP136',
-                'Sulindac Metabolic Pathway WP2542', 'Tamoxifen metabolism WP691',
+                'Sulindac Metabolic Pathway WP2542',
+                'Tamoxifen metabolism WP691',
                 'Drug Induction of Bile Acid Pathway WP2289',
-                'Aryl Hydrocarbon Receptor Pathway WP2873', 'Aryl Hydrocarbon Receptor WP2586'
+                'Aryl Hydrocarbon Receptor Pathway WP2873',
+                'Aryl Hydrocarbon Receptor WP2586',
             ],
             # 4. Endocrine and Receptor Signaling (pathways involve hormonal and receptor-mediated
             # signaling that regulates liver metabolism. Dysregulation can affect liver function and
@@ -712,45 +754,54 @@ class ToxPredictor:
             'Receptor signaling': [
                 'Estrogen Receptor Pathway WP2881',
                 'Constitutive Androstane Receptor Pathway WP2875',
-                'Farnesoid X Receptor  Pathway WP2879', 'Liver X Receptor Pathway WP2874',
+                'Farnesoid X Receptor  Pathway WP2879',
+                'Liver X Receptor Pathway WP2874',
                 'Nuclear Receptors in Lipid Metabolism and Toxicity WP299',
-                'Nuclear Receptors Meta-Pathway WP2882', 'Pregnane X Receptor pathway WP2876'
+                'Nuclear Receptors Meta-Pathway WP2882',
+                'Pregnane X Receptor pathway WP2876',
             ],
             # 5. Lipid Metabolism and Cholesterol Homeostasis (pathways regulating lipid metabolism
             # and cholesterol synthesis. Imbalances can lead to steatosis and stress on liver
             # function, potentially increasing the risk of DILI.)
             'Lipid metabolism': [
-                'Cholesterol Biosynthesis Pathway WP197', 'Fatty Acid Beta Oxidation WP143',
-                'Fatty Acid Biosynthesis WP357', 'Fatty Acid Omega Oxidation WP206',
+                'Cholesterol Biosynthesis Pathway WP197',
+                'Fatty Acid Beta Oxidation WP143',
+                'Fatty Acid Biosynthesis WP357',
+                'Fatty Acid Omega Oxidation WP206',
                 'SREBF and miR33 in cholesterol and lipid homeostasis WP2011',
                 'Sterol Regulatory Element-Binding Proteins (SREBP) signalling WP1982',
                 'Metabolic pathway of LDL, HDL and TG, including diseases WP4522',
-                'PPAR Alpha Pathway WP2878', 'PPAR signaling pathway WP3942',
-                'Mevalonate pathway WP3963'
+                'PPAR Alpha Pathway WP2878',
+                'PPAR signaling pathway WP3942',
+                'Mevalonate pathway WP3963',
             ],
             # 6. Metabolic Pathways (pathways essential for various metabolic functions such as
             # amino acid and protein metabolism. Disturbances in these pathways can indirectly
             # stress liver cells and alter susceptibility to DILI.)
             'Metabolic pathways': [
-                'Alanine and aspartate metabolism WP106', 'Amino Acid metabolism WP3925',
+                'Alanine and aspartate metabolism WP106',
+                'Amino Acid metabolism WP3925',
                 'Cysteine and methionine catabolism WP4504',
-                'One carbon metabolism and related pathways WP3940', 'Tryptophan metabolism WP465',
-                'Mitochondrial LC-Fatty Acid Beta-Oxidation WP368'
+                'One carbon metabolism and related pathways WP3940',
+                'Tryptophan metabolism WP465',
+                'Mitochondrial LC-Fatty Acid Beta-Oxidation WP368',
             ],
             # 7. Miscellaneous (pathways with complex or less direct links to DILI. They may
             # influence liver health through indirect mechanisms like inflammation, energy
             # metabolism, or bile acid regulation.)
             'Miscellaneous': [
                 'Electron Transport Chain (OXPHOS system in mitochondria) WP111',
-                'Oxidative phosphorylation WP623', 'Statin Pathway WP430',
-                'Valproic acid pathway WP3871'
-            ]
+                'Oxidative phosphorylation WP623',
+                'Statin Pathway WP430',
+                'Valproic acid pathway WP3871',
+            ],
         }
 
         return {key: [p for p in pws if p in self.features] for key, pws in pathways_dict.items()}
 
     def feature_importances(self, dili_pathways=None):
         from sklearn.metrics import roc_auc_score
+
         df = pd.DataFrame(columns=['AUC', 'MDI'])
         for k in self.features:
             df.loc[k, 'AUC'] = roc_auc_score(self._y, np.ravel(self._X[k]))
@@ -764,6 +815,7 @@ class ToxPredictor:
     def pull_data(self):
         """Loads the training data from the model."""
         from .datasets import training_data
+
         return training_data()
 
     def save_model(self, filepath, push_to_s3=False):
@@ -772,6 +824,7 @@ class ToxPredictor:
             self.DILImap_margins = self.safety_margin_results
 
         import copy
+
         model_copy = copy.deepcopy(self)
         for attr in self.__dict__.keys():
             if attr.startswith('_'):

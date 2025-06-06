@@ -7,8 +7,15 @@ from sklearn.metrics import roc_curve as _roc_curve, auc
 
 
 def roc_curve(
-        y_true, y_pred, threshold_points=None, threshold_name=None,
-        color='brown', label=None, axvline=None, inverse=False, show=True
+    y_true,
+    y_pred,
+    threshold_points=None,
+    threshold_name=None,
+    color='brown',
+    label=None,
+    axvline=None,
+    inverse=False,
+    show=True,
 ):
     """
     Plots a ROC curve with optional threshold annotations.
@@ -53,11 +60,16 @@ def roc_curve(
         for threshold in threshold_points:
             idx = np.argmin(np.abs(thresholds - ((-threshold) if inverse else threshold)))
             plt.scatter(fpr[idx], tpr[idx], marker='o', color='navy', s=30)
-            text = plt.text(fpr[idx] + 0.02, tpr[idx] - 0.01, f'{threshold_name} = {threshold}',
-                            color='navy', fontsize=10)
-            text.set_bbox(dict(facecolor='white', alpha=0.6, edgecolor='navy'))
+            text = plt.text(
+                fpr[idx] + 0.02,
+                tpr[idx] - 0.01,
+                f'{threshold_name} = {threshold}',
+                color='navy',
+                fontsize=10,
+            )
+            text.set_bbox({'facecolor': 'white', 'alpha': 0.6, 'edgecolor': 'navy'})
     if axvline:
-        plt.axvline(0.15, linestyle='--', color='grey', linewidth=.8)
+        plt.axvline(0.15, linestyle='--', color='grey', linewidth=0.8)
 
     # Final plot settings
     if show:
@@ -65,14 +77,26 @@ def roc_curve(
         plt.ylabel('True Positive Rate (TPR)', fontsize=12)
         plt.title('ROC Curve', fontsize=14)
         plt.legend(loc='lower right')
-        plt.grid(True, linewidth=.2)
+        plt.grid(True, linewidth=0.2)
         plt.show()
 
 
 def boxplot_with_swarm(
-        data, x, y, hue_order=None, palette=None, box_alpha=0.2, swarm_size=3,
-        box_width=.3, axhline=None, xlabel='', ylabel='', show=True, swarm_kwargs=None,
-        show_box=True, show_swarm=True
+    data,
+    x,
+    y,
+    hue_order=None,
+    palette=None,
+    box_alpha=0.2,
+    swarm_size=3,
+    box_width=0.3,
+    axhline=None,
+    xlabel='',
+    ylabel='',
+    show=True,
+    swarm_kwargs=None,
+    show_box=True,
+    show_swarm=True,
 ):
     """
     Creates a box plot overlaid with a swarm plot for a given dataset.
@@ -103,21 +127,40 @@ def boxplot_with_swarm(
         df_tmp = df_tmp[df_tmp[x].isin(hue_order)]
         df_tmp[x] = df_tmp[x].astype('str').astype('category')
         df_tmp[x] = df_tmp[x].cat.reorder_categories(hue_order, ordered=True)
-        df_tmp[x] = df_tmp[x].str.replace(' \(', '\n(', regex=True)
+        df_tmp[x] = df_tmp[x].str.replace(r' \(', '\n(', regex=True)
         hue_order = [o.replace(' (', '\n(') for o in hue_order]
 
     # Plot swarm plot
     if show_swarm:
         sns.swarmplot(
-            data=df_tmp, x=x, y=y, hue=x, hue_order=hue_order, order=hue_order,
-            palette=palette, size=swarm_size, linewidth=0.2, dodge=False, legend=None, **swarm_kwargs
+            data=df_tmp,
+            x=x,
+            y=y,
+            hue=x,
+            hue_order=hue_order,
+            order=hue_order,
+            palette=palette,
+            size=swarm_size,
+            linewidth=0.2,
+            dodge=False,
+            legend=None,
+            **swarm_kwargs,
         )
 
     # Plot box plot
     if show_box:
         sns.boxplot(
-            data=df_tmp, x=x, y=y, hue=x, hue_order=hue_order, order=hue_order, palette=palette,
-            boxprops=dict(alpha=box_alpha), width=box_width, dodge=False, fliersize=0
+            data=df_tmp,
+            x=x,
+            y=y,
+            hue=x,
+            hue_order=hue_order,
+            order=hue_order,
+            palette=palette,
+            boxprops={'alpha': box_alpha},
+            width=box_width,
+            dodge=False,
+            fliersize=0,
         )
 
     # Optional threshold line

@@ -45,7 +45,7 @@ def demo_data(level='counts'):
     if level not in ['counts', 'deseq2', 'pathways']:
         raise ValueError(f"must be one of ['counts', 'deseq2', 'pathways'], got {level}")
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=UserWarning)
+        warnings.filterwarnings('ignore', category=UserWarning)
         return read(f'demo_data_{level}.h5ad', package_name='public/data')
 
 
@@ -101,8 +101,8 @@ def DILImap_data(level='pathways'):
 
     adatas = {
         'training': read(f'training_data_{level}.h5ad', package_name='public/data'),
-        'validation': read(f'validation_data_{level}.h5ad', package_name='public/data')
+        'validation': read(f'validation_data_{level}.h5ad', package_name='public/data'),
     }
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UserWarning)
-        return ad.concat(adatas, label="dataset", index_unique=None)
+        warnings.simplefilter('ignore', category=UserWarning)
+        return ad.concat(adatas, label='dataset', index_unique=None)

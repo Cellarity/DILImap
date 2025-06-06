@@ -25,22 +25,22 @@ def login():
     This function sets the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in the environment.
     """
     # Try to load from .env
-    if not os.getenv("AWS_ACCESS_KEY_ID") or not os.getenv("AWS_SECRET_ACCESS_KEY"):
+    if not os.getenv('AWS_ACCESS_KEY_ID') or not os.getenv('AWS_SECRET_ACCESS_KEY'):
         load_dotenv()
 
     # Prompt if not set
-    if not os.getenv("AWS_ACCESS_KEY_ID") or not os.getenv("AWS_SECRET_ACCESS_KEY"):
-        print("AWS credentials not found in environment or .env file.")
-        os.environ["AWS_ACCESS_KEY_ID"] = getpass("Enter AWS Access Key ID: ")
-        os.environ["AWS_SECRET_ACCESS_KEY"] = getpass("Enter AWS Secret Access Key: ")
+    if not os.getenv('AWS_ACCESS_KEY_ID') or not os.getenv('AWS_SECRET_ACCESS_KEY'):
+        print('AWS credentials not found in environment or .env file.')
+        os.environ['AWS_ACCESS_KEY_ID'] = getpass('Enter AWS Access Key ID: ')
+        os.environ['AWS_SECRET_ACCESS_KEY'] = getpass('Enter AWS Secret Access Key: ')
 
     # Try validating credentials
     try:
-        list_files();
+        list_files()
     except Exception as e:
-        print("That didn't work. Try again")
-        os.environ.pop("AWS_ACCESS_KEY_ID", None)
-        os.environ.pop("AWS_SECRET_ACCESS_KEY", None)
+        print(f"That didn't work. {e}. Try again.")
+        os.environ.pop('AWS_ACCESS_KEY_ID', None)
+        os.environ.pop('AWS_SECRET_ACCESS_KEY', None)
 
 
 def list_files(registry='s3://dilimap'):
@@ -53,20 +53,20 @@ def list_files(registry='s3://dilimap'):
     Returns:
         list: A list of filenames (keys) in the bucket.
     """
-    bucket_name = registry.replace("s3://", "").strip("/")
+    bucket_name = registry.replace('s3://', '').strip('/')
 
     session = boto3.Session(
-        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+        aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
     )
-    s3 = session.client("s3")
+    s3 = session.client('s3')
 
     response = s3.list_objects_v2(Bucket=bucket_name)
     files = []
 
-    if "Contents" in response:
-        for obj in response["Contents"]:
-            files.append(obj["Key"])
+    if 'Contents' in response:
+        for obj in response['Contents']:
+            files.append(obj['Key'])
     else:
         print(f"No files found in registry '{registry}'.")
 
@@ -197,11 +197,12 @@ def _read_torch_pt(filepath: str, **kwargs):
     """Load an object from .pt file at `filepath`."""
     try:
         import torch
-    except ImportError:
+    except ImportError as e:
         raise ImportError(
             "The 'torch' package is required to load .pt files. "
-            "Please install it using: pip install torch"
-        )
+            'Please install it using: pip install torch'
+        ) from e
+
     return torch.load(filepath, map_location=torch.device('cpu'), **kwargs)
 
 
@@ -214,12 +215,13 @@ def _read_pickle(filepath: str, **kwargs):
 def _read_excel(filepath: str, **kwargs):
     """Load an object from .xlsx file at `filepath`."""
     try:
-        import openpyxl
-    except ImportError:
+        import openpyxl as _  # noqa: F401
+    except ImportError as e:
         raise ImportError(
             "The 'openpyxl' package is required to read Excel files. "
-            "Please install it using: pip install openpyxl"
-        )
+            'Please install it using: pip install openpyxl'
+        ) from e
+
     return pd.read_excel(filepath, **kwargs)
 
 
@@ -313,8 +315,10 @@ class QuiltPackage:
                         self.package_exists_remotely = True
             else:
                 raise ValueError('Could not find Package')
-        except ValueError:
-            raise ValueError('S3NoValidClientError: Likely an invalid client or networking issues')
+        except ValueError as e:
+            raise ValueError(
+                'S3NoValidClientError: Likely an invalid client or networking issues'
+            ) from e
 
         if metadata is not None:
             self.quilt_package.set_meta(metadata)
@@ -495,7 +499,7 @@ class QuiltPackage:
 
         full_path = os.path.join(self.local_dir, filepath)
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
+            warnings.simplefilter('ignore', category=UserWarning)
             return read_func(full_path, **kwargs)
 
     def browse_package(self):

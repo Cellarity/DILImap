@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 # -- Path setup --------------------------------------------------------------
 
 HERE = Path(__file__).parent
-sys.path.insert(0, f"{HERE.parent.parent}")
-sys.path.insert(0, os.path.abspath("_ext"))
+sys.path.insert(0, f'{HERE.parent.parent}')
+sys.path.insert(0, os.path.abspath('_ext'))
 logger = logging.getLogger(__name__)
 
 # -- Project information -----------------------------------------------------
@@ -20,13 +20,13 @@ author = 'Volker Bergen'
 master_doc = 'index'
 default_role = 'literal'
 html_theme = 'sphinx_rtd_theme'
-github_repo = "DILImap"
+github_repo = 'DILImap'
 copyright = '2025 Cellarity'
 
 # -- Options for HTML output ----------------------------------------------
 
 html_theme_options = {'navigation_depth': 1, 'titles_only': True, 'logo_only': True}
-html_static_path = ["_static"]
+html_static_path = ['_static']
 html_css_files = ['custom.css']
 html_logo = '_static/dilimap_cellarity_logo.png'
 html_show_sourcelink = True
@@ -58,8 +58,9 @@ if not GITHUB_TOKEN:
     logger.warning('No GitHub token found in .env file. Private notebook access may fail.')
 
 HEADERS = {'Authorization': f'token {GITHUB_TOKEN}'}
-BASE_API_URL = f'https://api.github.com/repos/Cellarity/DILImap_reproducibility/contents'
+BASE_API_URL = 'https://api.github.com/repos/Cellarity/DILImap_reproducibility/contents'
 TARGET_DIRS = ['tutorials', 'reproducibility']
+
 
 def download_recursively(remote_path: str, local_base: str = '.'):
     """Recursively downloads files from DILImap_reproducibility and mirrors its structure."""
@@ -84,6 +85,7 @@ def download_recursively(remote_path: str, local_base: str = '.'):
         elif item['type'] == 'dir':
             download_recursively(remote_file_path, local_base)
 
+
 for dir_name in TARGET_DIRS:
     download_recursively(dir_name)
 
@@ -96,6 +98,7 @@ nbsphinx_prolog = r"""
 
         <p><a href="../{{ env.docname.split('/')[0] }}.zip" download> 📥 Download all notebooks</a></p>
 """
+
 
 def zip_notebook_dirs(app, exception):
     if app.builder.name != 'html' or exception is not None:
@@ -112,9 +115,10 @@ def zip_notebook_dirs(app, exception):
                         full_path = os.path.join(root, file)
                         rel_path = os.path.relpath(full_path, start=src_dir)
                         zipf.write(full_path, arcname=os.path.join(folder, rel_path))
-            logger.info(f"Created zip archive: {zip_path}")
+            logger.info(f'Created zip archive: {zip_path}')
         else:
             logger.warning(f"Directory '{folder}' not found, skipping zip.")
+
 
 def setup(app):
     app.connect('build-finished', zip_notebook_dirs)
