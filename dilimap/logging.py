@@ -1,4 +1,5 @@
 """Logging and Profiling."""
+
 from datetime import datetime
 from platform import python_version
 from sys import stdout
