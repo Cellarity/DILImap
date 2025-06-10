@@ -2,7 +2,7 @@ Datasets
 ========
 All datasets are accessible through the DILImap Python API. To get started, install the package::
 
-    pip install dmap
+    pip install dilimap
 
 For example, to load DILI labels for all compounds, run::
 
