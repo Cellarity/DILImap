@@ -26,12 +26,12 @@ CLF = {
 
 class ToxPredictor:
     """
-    ToxPredictor pre-trained v2 or initialize new model for re-training.
+    ToxPredictor pre-trained v1 or initialize new model for re-training.
 
     It supports multi-output classification and custom hyperparameters for model training.
 
     Args:
-        version (str): Model version; for TGP use 'v1', for DILImap use 'v2'.
+        version (str): Model version; for TGP use 'v0.1', for DILImap use 'v1'.
         model (str): The model type to be used, for instance 'RandomForestClassifier'.
         multioutput (bool): Whether to use a multi-output classifier for the model.
         model_params (dict): Dictionary of parameters to pass to the model.
@@ -42,7 +42,7 @@ class ToxPredictor:
 
         from dilimap.models import ToxPredictor
 
-        model = ToxPredictor('v2')
+        model = ToxPredictor('v1')
         results = model.predict(data)
         safety_margins = model.compute_safety_margin(data, 'compound_name', 'dose_uM', 'Cmax_uM')
 
@@ -50,7 +50,7 @@ class ToxPredictor:
 
     def __init__(
         self,
-        version='v2',
+        version='v1',
         model=None,
         multioutput=None,
         model_params=None,
@@ -816,9 +816,9 @@ class ToxPredictor:
 
     def pull_data(self):
         """Loads the training data from the model."""
-        from .datasets import training_data
+        from .datasets import DILImap_training_data
 
-        return training_data()
+        return DILImap_training_data()
 
     def save_model(self, filepath, push_to_s3=False):
         """Save the model to S3 registry."""
@@ -832,7 +832,7 @@ class ToxPredictor:
             if attr.startswith('_'):
                 del model_copy.__dict__[attr]
         if push_to_s3:
-            write(model_copy, filepath)
+            write(model_copy, filename=filepath, package_name='public/models')
         else:
             with open(filepath, 'wb') as f:
                 joblib.dump(model_copy, f)

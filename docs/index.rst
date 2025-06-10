@@ -8,8 +8,8 @@ benchmark for predicting and understanding DILI mechanisms.
 **ToxPredictor**, our machine learning model trained on DILImap, delivers state-of-the-art DILI risk assessments —
 achieving 88% sensitivity at 100% specificity, outperforming existing methods.
 
-💊 DILImap core applications
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+💊 Core applications
+^^^^^^^^^^^^^^^^^^^^
 - Predict dose-resolved **DILI risk for new compounds**
 - Estimate DILI **safety margins to prioritize candidates**
 - Define tolerable **dose ranges to inform clinical guidance**
@@ -17,12 +17,16 @@ achieving 88% sensitivity at 100% specificity, outperforming existing methods.
 
 📚 Getting started
 ^^^^^^^^^^^^^^^^^^
+Install DILImap using::
+
+    pip install dilimap
+
 Use the sidebar to navigate through resources for
 
-- `Installation instructions <install.html>`_
-- `Usage principles <getting_started.html>`_
-- `Step-by-step tutorials <tutorials/1_Compute_Pathway_Signatures.html>`_
-- `Reproducibility notebooks <reproducibility/index.html>`_.
+- `Quickstart Guide <getting_started.html>`_
+- `Tutorials <tutorials/1_Compute_Pathway_Signatures.html>`_
+- `Paper results <reproducibility.html>`_
+
 
 .. toctree::
    :maxdepth: 1
@@ -30,13 +34,11 @@ Use the sidebar to navigate through resources for
    :hidden:
 
    about
-   install
-   api
 
 
 .. toctree::
    :maxdepth: 1
-   :caption: Tutorials
+   :caption: Getting Started
    :hidden:
 
    getting_started
@@ -46,7 +48,10 @@ Use the sidebar to navigate through resources for
 
 .. toctree::
    :maxdepth: 1
-   :caption: Reproducibility
+   :caption: Resources
    :hidden:
 
-   reproducibility/index
+   reproducibility
+   datasets
+   api
+   GitHub <https://github.com/Cellarity/DILImap>

@@ -60,6 +60,7 @@ if not GITHUB_TOKEN:
 HEADERS = {'Authorization': f'token {GITHUB_TOKEN}'}
 BASE_API_URL = 'https://api.github.com/repos/Cellarity/DILImap_reproducibility/contents'
 TARGET_DIRS = ['tutorials', 'reproducibility']
+suppress_warnings = ['misc.highlighting_failure']
 
 
 def download_recursively(remote_path: str, local_base: str = '.'):
