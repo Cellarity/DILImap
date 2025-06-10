@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import gseapy as gp
 import anndata as ad
 from scipy.sparse import issparse
 from dilimap.deseq2.deseq_pert import model_all_perts
@@ -252,6 +251,13 @@ def pathway_signatures(df, pval_thresh=0.05, gene_sets='WikiPathways_2019_Human'
         - `FDR`: Adjusted p-values (FDR).
         - `combined_score`: Enrichr's combined score.
     """
+    try:
+        import gseapy as gp
+    except ImportError as e:
+        raise ImportError(
+            'Please install gseapy first via `conda install -c bioconda gseapy`.'
+        ) from e
+
     gseapy_kwargs = {'gene_sets': gene_sets, 'organism': 'human'}
 
     if len(df) == 1:

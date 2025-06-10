@@ -23,7 +23,6 @@ dependencies = [
     'quilt3',
     'boto3',
     'python-dotenv',
-    'gseapy',
     'chembl_webresource_client',
 ]
 
