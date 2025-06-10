@@ -1,66 +1,63 @@
-Getting Started
----------------
+Quickstart Guide
+----------------
 
-This guide provides a quick overview of how to start using DILImap.
+Get started with DILImap in just a few steps.
 
-Install using ``pip install dilimap`` or follow the detailed installation instructions at
-main/install
+Install DILImap using::
+
+    pip install dilimap
+
+Or follow the doc:`detailed installation instructions <install>`
 
 
 DILImap workflow
 ^^^^^^^^^^^^^^^^
-Import DILImap as::
+Import the package::
 
     import dilimap as dmap
 
 Read your data
 ''''''''''''''
-Read your data file using::
+Read your dataset (.h5ad or .csv format)::
 
     adata = dmap.read(filename)
 
-which stores the data matrix (``adata.X``), annotation of cells / observations (``adata.obs``)
-and genes / variables (``adata.var``), unstructured annotation such as graphs (``adata.uns``) and
-additional data layers such as p-values (``adata.layers``) .
 
-If you don’t have a dataset yet, try one of the built-in options::
+Don’t have a dataset yet? Use a built-in demo::
 
-    adata = dmap.datasets.demo_counts()
+    adata = dmap.datasets.demo_data()
 
-The typical workflow consists of subsequent calls of preprocessing (``dmap.pp.*``), model
-predictions (``dmap.models.*``) and plotting (``dmap.pl.*``).
 
 WikiPathways signatures
 '''''''''''''''''''''''
-We start by applying QC metrics to filter out low-quality samples::
+Apply quality control to filter out low-quality samples::
 
     dmap.pp.qc_metrics(adata, **params)
     dmap.pp.qc_cross_rep_correlation(adata, **params)
 
-Next, we run DESeq2 to identify differentially expressed genes::
+Run DESeq2 to compute differential gene expression::
 
     adata_deseq = dmap.pp.deseq2(adata, **params)
 
-Then, we create WikiPathway signatures based on adjusted p-values (FDR) of those differentially
-expressed genes::
+Compute pathway-level signatures from DESeq2 results::
 
     FDR = adata_deseq.to_df('FDR')
     adata_wp = dmap.pp.pathway_signature(FDR, **params)
 
-ToxPredictor v2
+ToxPredictor v1
 '''''''''''''''
-We apply the ToxPredictor v2 DILI model to these WikiPathway signatures::
+Apply the DILI prediction model::
 
-    model = dmap.models.ToxPredictor('v2')
+    model = dmap.models.ToxPredictor('v1')
     df_results = model.predict(adata_wp, **params)
 
-and computing safety margins::
+Estimate safety margins::
 
     df_margins = model.compute_safety_margins(adata_wp, **params)
 
 Visualization
 '''''''''''''
 
-Finally, we can visualize the results::
+Generate dose-response plots per compound::
 
     model.plot_DILI_dose_regimes(cmpd, **params)

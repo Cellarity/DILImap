@@ -1,7 +1,7 @@
 .. automodule:: dilimap
 
-API
-===
+API Docs
+========
 
 Import DILImap as::
 
@@ -71,6 +71,15 @@ Datasets
    datasets.DILImap_training_data
    datasets.DILImap_validation_data
    datasets.DILImap_data
+
+Clients
+-------
+
+.. autosummary::
+   :toctree: .
+
+   clients.chembl
+   clients.drug_warnings
 
 Utils
 -----

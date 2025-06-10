@@ -25,7 +25,7 @@ DILI mechanisms. It leverages resources like DILIrank and LiverTox to categorize
 on their liver injury history. This dataset provides the foundation for uncovering molecular
 pathways and early gene signatures indicative of liver injury.
 
-**Introducing ToxPredictor v2: A Machine Learning Model for DILI Prediction**
+**Introducing ToxPredictor: A Machine Learning Model for DILI Prediction**
 
 ToxPredictor, a machine learning model trained on DILImap, achieves 88% sensitivity in
 detecting  DILI-positive compounds and 100% specificity in identifying safe compounds in
