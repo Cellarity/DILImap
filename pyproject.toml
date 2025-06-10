@@ -6,10 +6,7 @@ authors = [
 project.urls.Documentation = 'https://docs.cellarity.com/projects/DILImap/'
 project.urls.Source = 'https://github.com/Cellarity/DILImap'
 readme = 'README.rst'
-classifiers = [
-    'License :: Other/Proprietary License',
-    'Private :: Do Not Upload',  # Prevent accidental PyPI upload
-]
+classifiers = ['License :: Other/Proprietary License']
 dynamic = ['version']
 requires-python = '>=3.8'
 dependencies = [
