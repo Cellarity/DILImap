@@ -19,7 +19,7 @@ Usage & Support
 - **Documentation & Notebooks**: Visit `dilimap.org <https://dilimap.org/>`_ for detailed usage instructions and reproducibility notebooks.
   *(Note: Access is restricted — see manuscript for the tokenized link.)*
 
-- **Support** Reach out at `DILImap@cellarity.com <mailto:DILImap@cellarity.com>`_ with any questions or feedback.
+- **Support**: Reach out at `DILImap@cellarity.com <mailto:DILImap@cellarity.com>`_ with any questions or feedback.
 
 
 .. |actions| image:: https://github.com/Cellarity/dilimap/actions/workflows/ci.yaml/badge.svg?branch=main
