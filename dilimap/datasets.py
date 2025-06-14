@@ -13,7 +13,7 @@ def compound_DILI_labels():
     return read('compound_DILI_labels.csv', package_name='public/data')
 
 
-def compound_cell_viability(level='raw'):
+def compound_cell_viability(level='IC10'):
     """
     Cell viability assay results for all compounds in DILImap (csv file)
 
@@ -100,8 +100,8 @@ def DILImap_data(level='pathways'):
         raise ValueError(f"must be one of ['counts', 'deseq2', 'pathways'], got {level}")
 
     adatas = {
-        'training': read(f'training_data_{level}.h5ad', package_name='public/data'),
-        'validation': read(f'validation_data_{level}.h5ad', package_name='public/data'),
+        'training': DILImap_training_data(level=level),
+        'validation': DILImap_validation_data(level=level),
     }
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', category=UserWarning)

@@ -1,6 +1,7 @@
 """Plotting functions for data visualization and enrichment analysis"""
 
 import numpy as np
+import warnings
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import roc_curve as _roc_curve, auc
@@ -93,10 +94,12 @@ def boxplot_with_swarm(
     axhline=None,
     xlabel='',
     ylabel='',
+    title='',
     show=True,
     swarm_kwargs=None,
     show_box=True,
     show_swarm=True,
+    show_legend=True,
 ):
     """
     Creates a box plot overlaid with a swarm plot for a given dataset.
@@ -130,47 +133,54 @@ def boxplot_with_swarm(
         df_tmp[x] = df_tmp[x].str.replace(r' \(', '\n(', regex=True)
         hue_order = [o.replace(' (', '\n(') for o in hue_order]
 
-    # Plot swarm plot
-    if show_swarm:
-        sns.swarmplot(
-            data=df_tmp,
-            x=x,
-            y=y,
-            hue=x,
-            hue_order=hue_order,
-            order=hue_order,
-            palette=palette,
-            size=swarm_size,
-            linewidth=0.2,
-            dodge=False,
-            legend=None,
-            **swarm_kwargs,
-        )
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
 
-    # Plot box plot
-    if show_box:
-        sns.boxplot(
-            data=df_tmp,
-            x=x,
-            y=y,
-            hue=x,
-            hue_order=hue_order,
-            order=hue_order,
-            palette=palette,
-            boxprops={'alpha': box_alpha},
-            width=box_width,
-            dodge=False,
-            fliersize=0,
-        )
+        # Plot swarm plot
+        if show_swarm:
+            sns.swarmplot(
+                data=df_tmp,
+                x=x,
+                y=y,
+                hue=x,
+                hue_order=hue_order,
+                order=hue_order,
+                palette=palette,
+                size=swarm_size,
+                linewidth=0.2,
+                dodge=False,
+                legend=None,
+                **swarm_kwargs,
+            )
 
-    # Optional threshold line
-    if axhline is not None:
-        plt.axhline(axhline, linestyle='--', color='k')
+        # Plot box plot
+        if show_box:
+            sns.boxplot(
+                data=df_tmp,
+                x=x,
+                y=y,
+                hue=x,
+                hue_order=hue_order,
+                order=hue_order,
+                palette=palette,
+                boxprops={'alpha': box_alpha},
+                width=box_width,
+                dodge=False,
+                fliersize=0,
+            )
 
-    # Labels and aesthetics
-    plt.xlabel(xlabel, fontsize=12)
-    plt.ylabel(ylabel, fontsize=12)
+        # Optional threshold line
+        if axhline is not None:
+            plt.axhline(axhline, linestyle='--', color='k')
 
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), title=x)
-    if show:
-        plt.show()
+        # Labels and aesthetics
+        plt.xlabel(xlabel, fontsize=12)
+        plt.ylabel(ylabel, fontsize=12)
+        plt.title(title, fontsize=14)
+
+        if show_legend:
+            plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), title=x)
+        else:
+            plt.legend().remove()
+        if show:
+            plt.show()

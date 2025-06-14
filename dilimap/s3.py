@@ -20,7 +20,7 @@ from typing import Any, Callable, Dict, Optional
 
 def login():
     """
-    Load AWS credentials from a .env file or prompt the user interactively if not found.
+    Load AWS credentials from .env file or prompt interactively if missing.
 
     This function sets the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in the environment.
     """
@@ -114,6 +114,13 @@ def write(obj, filename, package_name='public/data', registry='s3://dilimap', **
 
 def _write_h5ad(obj: Any, filepath: str):
     """Write an object to disk as an .h5ad file by calling `.write_h5ad()`."""  # noqa: D402
+    for col in obj.obs.columns:
+        if obj.obs[col].dtype == 'object':
+            # Convert only if not already string
+            unique_vals = pd.Series(obj.obs[col].dropna().unique())
+            if unique_vals.isin([True, False]).all():
+                obj.obs[col] = obj.obs[col].astype(bool)
+
     obj.write_h5ad(filepath)
 
 

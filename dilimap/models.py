@@ -1,5 +1,6 @@
 # Standard library imports
 import joblib
+import random
 from warnings import warn
 import pandas as pd
 import numpy as np
@@ -12,9 +13,20 @@ from sklearn.model_selection import GroupKFold, cross_validate
 from sklearn.utils import all_estimators
 from sklearn.base import ClassifierMixin
 
+# Third-party classifiers
+try:
+    from xgboost import XGBClassifier
+except ImportError:
+    XGBClassifier = None
+
+try:
+    from lightgbm import LGBMClassifier
+except ImportError:
+    LGBMClassifier = None
+
 # Local imports
-from .s3 import read, write
-from .utils import groupby, crosstab
+from .s3 import read, write, list_files
+from .utils import groupby, crosstab, map_dili_labels_and_cmax
 
 # Dictionary of all available classifiers in scikit-learn
 CLF = {
@@ -22,6 +34,12 @@ CLF = {
     for name, estimator in all_estimators()
     if issubclass(estimator, ClassifierMixin)
 }
+
+# Add external models manually if available
+if XGBClassifier is not None:
+    CLF['XGBClassifier'] = XGBClassifier
+if LGBMClassifier is not None:
+    CLF['LGBMClassifier'] = LGBMClassifier
 
 
 class ToxPredictor:
@@ -67,7 +85,7 @@ class ToxPredictor:
         self.version = version
         self.DILI_pred_cutoff = None
         self.safety_margin_results = None
-        self.DILImap_margins = None
+        self.cross_val_results = None
 
         if local_filepath:
             self._load_from_local(local_filepath)
@@ -88,6 +106,14 @@ class ToxPredictor:
         except (FileNotFoundError, RuntimeError) as e:
             raise RuntimeError('Failed to load pretrained model.') from e
 
+        data_path = f'ToxPredictor_{self.version}_training_data.csv'
+        if any(data_path in k for k in list_files()):
+            try:
+                self._X = read(data_path, package_name='public/data')
+            except (FileNotFoundError, RuntimeError) as e:
+                warn(f'Failed to load training data: {e}', RuntimeWarning, stacklevel=2)
+                self._X = None  # or set a fallback/default value
+
     def _load_from_local(self, filepath):
         """Loads the pre-trained model from a local file."""
         if not filepath:
@@ -99,7 +125,7 @@ class ToxPredictor:
         """Validates and updates the current instance with the loaded model."""
         if not isinstance(model, ToxPredictor):
             raise ValueError('The file does not contain a ToxPredictor object.')
-        self.__dict__.update(model.__dict__)
+        self.__dict__.update({k: v for k, v in model.__dict__.items() if k != 'version'})
 
     def _initialize_model(self):
         """Initialize the model based on the provided parameters."""
@@ -110,6 +136,8 @@ class ToxPredictor:
             'svc': 'SVC',
             'mlp': 'MLPClassifier',
             'gb': 'GradientBoostingClassifier',
+            'xgb': 'XGBClassifier',
+            'lgbm': 'LGBMClassifier',
         }
 
         if self.model_name in model_map:
@@ -125,6 +153,7 @@ class ToxPredictor:
 
         if self.model_name == 'RandomForestClassifier' and not self.model_params:
             self.model_params = {
+                'random_state': 42,
                 'n_estimators': 100,
                 'max_depth': 2,
                 'min_samples_split': 2,
@@ -149,6 +178,7 @@ class ToxPredictor:
         # Store observation and feature names
         self.obs_names = self._X.index
         self.features = self._X.columns
+        self.training_labels = self._y
 
         # Fill NaN values
         if self._X.isna().any().any():
@@ -173,6 +203,15 @@ class ToxPredictor:
         return self.cv_models['indices']
 
     @property
+    def test_fold_assignments(self):
+        fold_assignments = np.zeros(max(np.concatenate(self.indices['test'])) + 1, dtype=int)
+
+        for i, idx in enumerate(self.indices['test']):
+            fold_assignments[idx] = i
+
+        return pd.DataFrame(fold_assignments, index=self.obs_names, columns=['test_fold'])
+
+    @property
     def classes_(self):
         """Returns the classes of the classifier estimators."""
         return self.estimators[0].classes_
@@ -187,7 +226,7 @@ class ToxPredictor:
         else:
             return self.estimators
 
-    def cross_validate(self, X, y, n_splits=5, groups=None, scoring=None):
+    def cross_validate(self, X, y, n_splits=5, groups=None, scoring=None, seed=42):
         """
         Performs cross-validation on the model using GroupKFold.
 
@@ -206,7 +245,8 @@ class ToxPredictor:
         self._prepare_data(X, y)
 
         # Set random seed for reproducibility
-        np.random.seed(0)
+        np.random.seed(seed)
+        random.seed(seed)
 
         # Initialize GroupKFold with specified number of splits
         group_kfold = GroupKFold(n_splits=n_splits)
@@ -472,9 +512,120 @@ class ToxPredictor:
     def compute_safety_margin(
         self,
         data,
-        pert_col,
-        dose_col,
-        cmax_col,
+        pert_col='compound_name',
+        dose_col='dose_uM',
+        cmax_col='Cmax_uM',
+        y_pred_col=None,
+        y_thresh=None,
+        retain_all_cols=None,
+    ):
+        """
+        Computes the margin of safety (MOS) based on predicted toxicity.
+
+        Parameters:
+        ----------
+        data : anndata.AnnData or pandas.DataFrame
+            Input data containing observations and predictions.
+            Must include columns like 'compound_name', 'dose_uM', and 'Cmax_uM'.
+        pert_col : str
+            Column indicating perturbations (default: 'compound_name').
+        dose_col : str
+            Column with dose values (default: 'dose_uM').
+        cmax_col : str
+            Column with Cmax values (default: 'Cmax_uM').
+        y_pred_col : str
+            Predicted DILI probabilities. If missing, predictions are generated automatically.
+        y_thresh : float, optional
+            Threshold for toxicity predictions. Default uses `self.DILI_pred_cutoff` or 0.7.
+
+        Returns:
+        -------
+        pandas.DataFrame
+            DataFrame grouped by compound, with computed MOS and DILI flags.
+        """
+        y_thresh = y_thresh or self.DILI_pred_cutoff or 0.7
+        self.DILI_pred_cutoff = y_thresh
+
+        # Copy the observation data to avoid modifying the original
+        df_obs = data.obs.copy() if isinstance(data, ad.AnnData) else data.copy()
+
+        # Check required columns
+        if cmax_col not in df_obs.columns or dose_col not in df_obs.columns:
+            raise ValueError(
+                f'Both `{dose_col}` and `{cmax_col}` must be provided in the input data.'
+            )
+
+        if y_pred_col not in df_obs.columns:
+            df_obs[y_pred_col] = self.predict(data)['DILI_probability']
+
+        # Create a table with compound x dose and y_prediction as values
+        df_pred = crosstab(df_obs, [pert_col, dose_col, y_pred_col], aggfunc='mean') > y_thresh
+
+        # Compute RNA_IC50_uM: the minimum toxic dose per compound
+        df_obs['First_DILI_uM'] = df_obs[pert_col].map(
+            (df_pred * df_pred.columns).replace(0, np.nan).min(axis=1)
+        )
+
+        # Calculate MOS (Margin of Safety) for different indicators, with clamping between 1 and 300
+        df_obs['MOS_Cmax'] = np.clip(2e3 / df_obs[cmax_col], 1, 300)
+
+        df_obs['MOS_Cytotoxicity'] = (
+            np.clip(np.nan_to_num(df_obs['LDH_IC10_uM'] / df_obs[cmax_col], nan=300), 1, 300)
+            if 'LDH_IC10_uM' in df_obs.columns
+            else 300
+        )
+
+        df_obs['MOS_Transcriptomics'] = (
+            np.clip(np.nan_to_num(df_obs['First_DILI_uM'] / df_obs[cmax_col], nan=300), 1, 300)
+            if 'First_DILI_uM' in df_obs.columns
+            else 300
+        )
+
+        # Calculate the final MOS by taking the minimum across MOS_Cmax, MOS_LDH, and MOS_RNA
+        cols = [
+            k
+            for k in ['MOS_Cmax', 'MOS_Cytotoxicity', 'MOS_Transcriptomics']
+            if k in df_obs.columns
+        ]
+        df_obs['MOS_ToxPredictor'] = df_obs[cols].min(axis=1)
+
+        # Determine DILI flag based on MOS values
+        df_obs['Primary_DILI_driver'] = np.select(
+            [
+                df_obs['MOS_Transcriptomics'] < 80,
+                df_obs['MOS_Cytotoxicity'] < 80,
+                df_obs['MOS_Cmax'] < 80,
+            ],
+            ['Transcriptomics', 'Cytotoxicity', 'Cmax'],
+            default='none',
+        )
+
+        # Group the results by compound_name
+        df_res = groupby(df_obs, 'compound_name')
+
+        df_res['Classification'] = np.where(df_res['MOS_ToxPredictor'] < 80, '+', '-')
+
+        if not retain_all_cols:
+            all_cols = [
+                cmax_col,
+                'First_DILI_uM',
+                'MOS_Cytotoxicity',
+                'MOS_ToxPredictor',
+                'Primary_DILI_driver',
+                'Classification',
+            ]
+            all_cols = [c for c in all_cols if c in df_res.columns]
+            df_res = df_res[all_cols]
+
+        self.safety_margin_results = df_res.copy()
+        return df_res
+
+    def _compute_safety_margin_archived(
+        self,
+        data,
+        pert_col='compound_name',
+        dose_col='dose_uM',
+        cmax_col='Cmax_uM',
         y_pred_col=None,
         y_thresh=None,
         retain_all_cols=None,
@@ -558,8 +709,13 @@ class ToxPredictor:
         self.safety_margin_results = df_res.copy()
         return df_res
 
-    def _compute_DILImap_margins(self, **kwargs):
-        self.DILImap_margins = self.compute_safety_margin(**kwargs, retain_all_cols=True)
+    def _record_cross_val_results(self, **kwargs):
+        if self.safety_margin_results is not None:
+            self.cross_val_results = self.safety_margin_results.copy()
+        else:
+            self.cross_val_results = self.compute_safety_margin(**kwargs, retain_all_cols=True)
+
+        map_dili_labels_and_cmax(self.cross_val_results, labels=['DILI_label'])
 
     def compute_empirical_DILI_risk(self, IC50_uM=None, dose_range=None, logspace=True, num=500):
         """
@@ -578,11 +734,12 @@ class ToxPredictor:
         pandas.DataFrame
             A DataFrame with dose values and corresponding empirical DILI likelihood.
         """
-        if self.DILImap_margins is None:
-            raise ValueError('Please run `_compute_DILImap_margins` first.')
+        if self.cross_val_results is None:
+            raise ValueError('Please run `_record_cross_val_results` first.')
 
         IC50_uM = np.nan_to_num(IC50_uM, 1e4) or 1e4
-        df_res = self.DILImap_margins
+        df_res = self.cross_val_results
+
         df = df_res[df_res['DILI_label'].isin(['DILI (withdrawn)', 'DILI (known)', 'No DILI'])]
 
         tot_pos = df['DILI_label'].str.startswith('DILI').sum()
@@ -601,8 +758,14 @@ class ToxPredictor:
         IC50s = [IC50_uM * -np.log10(0.5), IC50_uM, IC50_uM / -np.log10(0.5)]
         for ic50 in IC50s:
             DILI_risk = [
-                (df[df['MOS'] > ic50 / d]['DILI_label'].str.startswith('DILI').sum() / tot_pos)
-                - (df[df['MOS'] < ic50 / d]['DILI_label'].str.startswith('No').sum() / tot_neg)
+                (
+                    df[df['MOS_ToxPredictor'] > ic50 / d]['DILI_label'].str.startswith('DILI').sum()
+                    / tot_pos
+                )
+                - (
+                    df[df['MOS_ToxPredictor'] < ic50 / d]['DILI_label'].str.startswith('No').sum()
+                    / tot_neg
+                )
                 for d in doses
             ]
 
@@ -675,11 +838,11 @@ class ToxPredictor:
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 4))
 
-        if self.safety_margin_results is None:
+        if self.cross_val_results is None:
             raise ValueError('Please run `compute_safety_margin` first.')
 
         # Estimate empirical likelihoods
-        IC50_uM = self.safety_margin_results['RNA_IC50_uM'][compound]
+        IC50_uM = self.safety_margin_results['First_DILI_uM'][compound]
         Cmax_uM = self.safety_margin_results['Cmax_uM'][compound]
 
         DILI_likelihoods = self.compute_empirical_DILI_risk(IC50_uM=IC50_uM, dose_range=dose_range)
@@ -801,38 +964,52 @@ class ToxPredictor:
 
         return {key: [p for p in pws if p in self.features] for key, pws in pathways_dict.items()}
 
-    def feature_importances(self, dili_pathways=None):
+    def feature_importances(self, dili_pathways=True):
+        """Compute feature-level AUC, mean decrease in impurity (MDI), and correlation
+        with the true DILI label (Pearson and Spearman). Optionally restricts to DILI pathways.
+        """
         from sklearn.metrics import roc_auc_score
+        from scipy.stats import pearsonr, spearmanr
+        import numpy as np
+        import pandas as pd
 
-        df = pd.DataFrame(columns=['AUC', 'MDI'])
-        for k in self.features:
-            df.loc[k, 'AUC'] = roc_auc_score(self._y, np.ravel(self._X[k]))
+        df = pd.DataFrame(index=self.features, columns=['AUC', 'MDI', 'Pearson_r', 'Spearman_r'])
+
+        y = self._y if hasattr(self, '_y') else self.training_labels
+        y_pred = np.ravel(self.predict_cv())
+
+        for i, k in enumerate(self.features):
+            x = np.ravel(self._X[k])
+            df.loc[k, 'AUC'] = roc_auc_score(y, x)
+            df.loc[k, 'Pearson_r'] = pearsonr(y_pred, x)[0]
+            df.loc[k, 'Spearman_r'] = spearmanr(y_pred, x)[0]
 
         df['MDI'] = np.mean([m.feature_importances_ for m in self.estimators], axis=0)
 
         if dili_pathways:
-            df = df[[k for k in np.hstack(list(self.DILI_pathways.values())) if k in df.index]]
-        return df
+            df = df.loc[[k for k in np.hstack(list(self.DILI_pathways.values())) if k in df.index]]
+
+        return df.astype(float)
 
     def pull_data(self):
         """Loads the training data from the model."""
-        from .datasets import DILImap_training_data
-
-        return DILImap_training_data()
+        return read(f'ToxPredictor_{self.version}_training_data.h5ad')
 
     def save_model(self, filepath, push_to_s3=False):
         """Save the model to S3 registry."""
-        if self.DILImap_margins is None and self.safety_margin_results is not None:
-            self.DILImap_margins = self.safety_margin_results
+        from copy import deepcopy
 
-        import copy
+        if self.cross_val_results is None:
+            self._record_cross_val_results()
 
-        model_copy = copy.deepcopy(self)
+        model_copy = deepcopy(self)
         for attr in self.__dict__.keys():
             if attr.startswith('_'):
                 del model_copy.__dict__[attr]
         if push_to_s3:
             write(model_copy, filename=filepath, package_name='public/models')
+            if hasattr(self, '_X'):
+                write(self._X, filename=filepath.split('.')[0] + '_training_data.csv')
         else:
             with open(filepath, 'wb') as f:
                 joblib.dump(model_copy, f)
