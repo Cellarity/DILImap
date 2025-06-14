@@ -110,3 +110,137 @@ def crosstab(data, keys, aggfunc=None):
         aggfunc = 'first' if isinstance(df[keys[-1]].iloc[0], str) else 'mean'
 
     return pd.crosstab(df[keys[0]], df[keys[1]], df[keys[2]], aggfunc=aggfunc)
+
+
+def map_dili_labels_and_cmax(data, obs_key=None, labels=None, insert_at_front=None):
+    """
+    Annotate an AnnData or pandas.DataFrame with selected DILI labels and Cmax values.
+
+    Parameters
+    ----------
+    data : anndata.AnnData or pandas.DataFrame
+        The data to annotate. Uses obs_names (AnnData) or index/column (DataFrame)
+        to map compound names.
+
+    obs_key : str, optional
+        If provided, use data.obs[obs_key] or data[obs_key] to map compound names instead of index.
+
+    labels : list of str, optional
+        List of columns to map. Options include:
+        - 'DILI_label', 'DILIrank' (from DILI dataset)
+        - 'Cmax_uM', 'free_Cmax_uM' (from Cmax dataset)
+        - 'LDH_IC10_uM' (from cytotoxicity dataset)
+        If None, all available columns will be added.
+
+    Returns
+    -------
+    None
+        Modifies `data.obs` (AnnData) or `data` (DataFrame) in-place.
+    """
+    from . import datasets
+
+    df_DILI = datasets.compound_DILI_labels()
+    df_DILI.index = df_DILI.index.astype(str).str.lower()
+
+    # Auto-detect all possible labels if none are specified
+    if labels is None:
+        labels = set(df_DILI.columns)
+        load_cmax = True
+        load_ldh = True
+        labels.update(['Cmax_uM', 'free_Cmax_uM', 'LDH_IC10_uM'])
+    else:
+        labels = set(labels)
+        load_cmax = any(label in labels for label in ['Cmax_uM', 'free_Cmax_uM'])
+        load_ldh = 'LDH_IC10_uM' in labels
+
+    if load_cmax:
+        df_CMAX = datasets.compound_Cmax_values()
+        df_CMAX.index = df_CMAX.index.astype(str).str.lower()
+
+    if load_ldh:
+        df_LDH = datasets.compound_cell_viability()
+        df_LDH.index = df_LDH.index.astype(str).str.lower()
+
+    # Determine data frame to annotate
+    if isinstance(data, ad.AnnData):
+        df = data.obs
+    elif isinstance(data, pd.DataFrame):
+        df = data
+    else:
+        raise TypeError('Input must be an AnnData or pandas DataFrame')
+
+    # Extract compound names
+    obs_names = df.index if obs_key is None else df[obs_key]
+    obs_names = obs_names.astype(str).str.lower()
+
+    # Prepare new columns
+    new_cols = {}
+
+    # Map DILI labels
+    for col in df_DILI.columns:
+        if col in labels:
+            new_cols[col] = obs_names.map(df_DILI[col])
+
+    # Map Cmax
+    if 'Cmax_uM' in labels:
+        new_cols['Cmax_uM'] = obs_names.map(df_CMAX['Cmax_median'])
+
+    if 'free_Cmax_uM' in labels:
+        new_cols['free_Cmax_uM'] = obs_names.map(df_CMAX['free_Cmax_median'])
+
+    # Map viability data
+    if 'LDH_IC10_uM' in labels:
+        new_cols['LDH_IC10_uM'] = obs_names.map(df_LDH['IC10_uM'])
+
+    # Insert columns in-place, overwrite if exists
+    for i, (col, values) in enumerate(new_cols.items()):
+        if insert_at_front:
+            if col in df.columns:
+                df.drop(columns=col, inplace=True)
+            df.insert(loc=i, column=col, value=values)
+        else:
+            df[col] = values
+
+
+def map_dili_labels_and_cmax_(adata, obs_key=None):
+    """
+    Annotate an AnnData object with DILI labels and Cmax values.
+
+    Parameters
+    ----------
+    adata : anndata.AnnData
+        The AnnData object to annotate. Assumes `obs_names` or a column in `adata.obs` contains compound names.
+
+    obs_key : str, optional
+        If provided, use `adata.obs[obs_key]` instead of `adata.obs_names` to map compound names.
+
+    Returns
+    -------
+    None
+        The function modifies `adata.obs` in-place by adding the following columns:
+        - DILI-related labels (e.g., 'DILI_label', 'DILI_confidence') from `compound_DILI_labels.csv`
+        - 'Cmax_uM': total Cmax values from `compound_Cmax_values.csv`
+        - 'free_Cmax_uM': free Cmax values from `compound_Cmax_values.csv`
+    """
+    from . import datasets
+
+    # Map DILI annotations
+    df_DILI = datasets.compound_DILI_labels()
+    df_DILI.index = df_DILI.index.str.lower()
+
+    obs_names = adata.obs_names.copy() if obs_key is None else adata.obs[obs_key].copy()
+    obs_names = obs_names.str.lower()
+
+    for col in df_DILI.columns:
+        adata.obs[col] = obs_names.map(df_DILI[col])
+
+    # Map Cmax values
+    df_CMAX = datasets.compound_Cmax_values()
+    df_CMAX.index = df_CMAX.index.str.lower()
+    adata.obs['Cmax_uM'] = obs_names.map(df_CMAX['Cmax_median'])
+    adata.obs['free_Cmax_uM'] = obs_names.map(df_CMAX['free_Cmax_median'])
+
+    # Map IC10s from LDH cell viability screen
+    df_LDH = datasets.compound_cell_viability()
+    df_LDH.index = df_LDH.index.str.lower()
+    adata.obs['LDH_IC10_uM'] = obs_names.map(df_LDH['IC10_uM'])

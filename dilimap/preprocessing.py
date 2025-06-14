@@ -158,6 +158,26 @@ def deseq2(
         - `pvalue`, `FDR` and `LFC` (log2 fold change) in `layers` for each gene and perturbation.
         - `obs` with summarized perturbation metadata.
     """
+    import shutil
+    import subprocess
+
+    if shutil.which('docker') is None:
+        raise EnvironmentError(
+            'Docker is not installed or not found in your system path.\n'
+            'DESeq2 runs via an R script inside a Docker container, allowing seamless integration from Python.\n'
+            'Please install Docker from https://www.docker.com/products/docker-desktop and ensure it is running.\n'
+            'Note: The initial Docker image build may take a few minutes.'
+        )
+
+    # Check if Docker daemon is running
+    try:
+        subprocess.run(['docker', 'info'], check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        raise EnvironmentError(
+            'Docker is installed but cannot connect to the Docker daemon.\n'
+            'Please ensure the Docker application is running and try again.\n'
+            f'Details: {e.stderr.decode().strip()}'
+        ) from e
 
     # Initialize Dask client if not provided
     if dask_client is None:

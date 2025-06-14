@@ -7,7 +7,7 @@ Install DILImap using::
 
     pip install dilimap
 
-Or follow the doc:`detailed installation instructions <install>`
+Or follow the :doc:`detailed installation instructions <install>`
 
 
 DILImap workflow

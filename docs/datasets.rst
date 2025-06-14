@@ -9,8 +9,6 @@ For example, to load DILI labels for all compounds, run::
     import dilimap as dmap
     df = dmap.datasets.compound_DILI_labels()
 
-**Note**: Raw training data marked with an asterisk (*) are proprietary and available only upon request, subject to data-sharing agreements.
-
 Compound-level data
 -------------------
 
@@ -34,3 +32,6 @@ DILImap validation data
 Models
 ------
 * :doc:`ToxPredictor model <dilimap.models.ToxPredictor>` (ToxPredictor DILI prediction model)
+
+
+**Note**: Raw training data marked with an asterisk (*) are proprietary and available only upon request, subject to data-sharing agreements.

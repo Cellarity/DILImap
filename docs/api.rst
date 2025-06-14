@@ -19,6 +19,7 @@ Read/write from S3
 .. autosummary::
    :toctree: .
 
+   s3.login
    s3.read
    s3.write
 
@@ -90,3 +91,4 @@ Utils
    utils.platemap
    utils.groupby
    utils.crosstab
+   utils.map_dili_labels_and_cmax
