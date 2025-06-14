@@ -19,7 +19,7 @@ def mock_enrichr_result(index=0):
     )
 
 
-@patch('dilimap.preprocessing.gp.enrichr')
+@patch('gseapy.enrichr')
 def test_single_sample_dataframe(mock_enrichr):
     mock_enrichr.return_value.results = mock_enrichr_result()
 
@@ -32,7 +32,7 @@ def test_single_sample_dataframe(mock_enrichr):
     assert 'Adjusted P-value' in result.columns
 
 
-@patch('dilimap.preprocessing.gp.enrichr')
+@patch('gseapy.enrichr')
 def test_multi_sample_dataframe(mock_enrichr):
     # Mock returns slightly different result per call
     def enrichr_side_effect(*args, **kwargs):
