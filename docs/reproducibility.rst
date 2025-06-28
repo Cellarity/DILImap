@@ -1,7 +1,8 @@
 Reproducibility
 ===============
-This directory contains the full set of Jupyter notebooks used
-to generate the results shown in the DILImap publication
+This directory provides the complete set of Jupyter notebooks used to generate all results
+presented in the DILImap publication. For convenience, you can also download a ZIP archive
+of all notebooks `here <https://dilimap.org/review-dUFZulWv8k7bERJ3FQs4/reproducibility.zip>`_.
 
 Data Preparation
 ----------------

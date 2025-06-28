@@ -27,9 +27,14 @@ def chembl(molecule_name=None, smiles=None):
     else:
         results = []
 
+        molecule_name = molecule_name or [None] * len(smiles)
+        smiles = smiles or [None] * len(molecule_name)
+        queries = list(zip(molecule_name, smiles))
+
         with ThreadPoolExecutor(max_workers=16) as executor:
             futures = {
-                executor.submit(_fetch_chembl_entry, name): name for name in list(molecule_name)
+                executor.submit(_fetch_chembl_entry, name, smile): (name, smile)
+                for name, smile in queries
             }
             for future in as_completed(futures):
                 result = future.result()
