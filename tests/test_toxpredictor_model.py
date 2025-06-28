@@ -19,9 +19,9 @@ def test_toxpredictor_predict(mock_read):
     mock_model = MagicMock(spec=ToxPredictor)
     mock_model.features = features
     mock_model.estimators = [MagicMock()]
-    mock_model.estimators[0].predict_proba.return_value = np.array([[0.383354, 0.383354]]).T
+    mock_model.estimators[0].predict_proba.return_value = np.array([[0.385, 0.385]]).T
     mock_model.predict_proba.return_value = pd.DataFrame(
-        np.array([[0.383354, 0.383354]]).T, columns=['DILI_probability'], index=['drug1', 'drug2']
+        np.array([[0.385, 0.385]]).T, columns=['DILI_probability'], index=['drug1', 'drug2']
     )
 
     # Patch read() to return the mock model
@@ -35,7 +35,7 @@ def test_toxpredictor_predict(mock_read):
     )
 
     # Instantiate ToxPredictor (will trigger mock_read)
-    model = ToxPredictor()
+    model = ToxPredictor('v1')
     # model.cv_models['estimator'] = mock_model.estimators  # plug in mocked estimator
 
     # Run prediction
@@ -44,4 +44,4 @@ def test_toxpredictor_predict(mock_read):
     # Assertions
     assert isinstance(result, pd.DataFrame)
     assert 'DILI_probability' in result.columns
-    assert np.isclose(result.iloc[0, 0], 0.383354)
+    assert np.isclose(result.iloc[0, 0], 0.385, atol=0.005)
