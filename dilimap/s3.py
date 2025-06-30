@@ -43,16 +43,20 @@ def login():
         os.environ.pop('AWS_SECRET_ACCESS_KEY', None)
 
 
-def list_files(registry='s3://dilimap'):
+def list_files(registry='s3://dilimap', prefix='public/'):
     """
     List all files/packages available in a given S3 bucket.
 
     Args:
         registry (str): The S3 registry URI in the format 's3://bucket-name'.
+        prefix (str): The prefix to filter files in the bucket.
 
     Returns:
         list: A list of filenames (keys) in the bucket.
     """
+    if prefix is None:
+        raise ValueError('Prefix cannot be None. Please provide a valid prefix.')
+
     bucket_name = registry.replace('s3://', '').strip('/')
 
     session = boto3.Session(
@@ -61,9 +65,9 @@ def list_files(registry='s3://dilimap'):
     )
     s3 = session.client('s3')
 
-    response = s3.list_objects_v2(Bucket=bucket_name)
-    files = []
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
 
+    files = []
     if 'Contents' in response:
         for obj in response['Contents']:
             files.append(obj['Key'])
