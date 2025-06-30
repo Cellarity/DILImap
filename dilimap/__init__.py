@@ -5,13 +5,10 @@ import sys
 import warnings
 
 # Set SCIPY_ARRAY_API for compatibility with Google colab
-if os.environ.get('SCIPY_ARRAY_API') != '1':
+if 'google.colab' in sys.modules and os.environ.get('SCIPY_ARRAY_API') != '1':
     os.environ['SCIPY_ARRAY_API'] = '1'
     if 'scipy' in sys.modules:
-        warnings.warn(
-            "⚠️ Environment variable 'SCIPY_ARRAY_API' was set to '1' for compatibility with your system.",
-            stacklevel=2,
-        )
+        warnings.warn("'SCIPY_ARRAY_API' was set to '1' for compatibility in Colab.", stacklevel=2)
 
 from ._version import __version__  # hidden file
 from . import logging, s3, datasets, utils, models, clients, preprocessing as pp, plotting as pl
