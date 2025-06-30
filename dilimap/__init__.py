@@ -9,8 +9,7 @@ if os.environ.get('SCIPY_ARRAY_API') != '1':
     os.environ['SCIPY_ARRAY_API'] = '1'
     if 'scipy' in sys.modules:
         warnings.warn(
-            '⚠️ To ensure full compatibility in Google Colab, please set\n'
-            "`os.environ['SCIPY_ARRAY_API'] = '1'` at the very start of your notebook.\n",
+            "⚠️ Environment variable 'SCIPY_ARRAY_API' was set to '1' for compatibility with your system.",
             stacklevel=2,
         )
 
