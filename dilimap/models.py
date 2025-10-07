@@ -518,6 +518,7 @@ class ToxPredictor:
         y_pred_col=None,
         y_thresh=None,
         retain_all_cols=None,
+        vmax=None,
     ):
         """
         Computes the margin of safety (MOS) based on predicted toxicity.
@@ -537,6 +538,8 @@ class ToxPredictor:
             Predicted DILI probabilities. If missing, predictions are generated automatically.
         y_thresh : float, optional
             Threshold for toxicity predictions. Default uses `self.DILI_pred_cutoff` or 0.7.
+        vmax : float, optional
+            Maximum value for the MOS. Default is 300.
 
         Returns:
         -------
@@ -545,6 +548,7 @@ class ToxPredictor:
         """
         y_thresh = y_thresh or self.DILI_pred_cutoff or 0.7
         self.DILI_pred_cutoff = y_thresh
+        vmax = vmax or 300
 
         # Copy the observation data to avoid modifying the original
         df_obs = data.obs.copy() if isinstance(data, ad.AnnData) else data.copy()
@@ -566,19 +570,19 @@ class ToxPredictor:
             (df_pred * df_pred.columns).replace(0, np.nan).min(axis=1)
         )
 
-        # Calculate MOS (Margin of Safety) for different indicators, with clamping between 1 and 300
-        df_obs['MOS_Cmax'] = np.clip(2e3 / df_obs[cmax_col], 1, 300)
+        # Calculate MOS (Margin of Safety) for different indicators, with clamping between 1 and vmax
+        df_obs['MOS_Cmax'] = np.clip(2e3 / df_obs[cmax_col], 1, vmax)
 
         df_obs['MOS_Cytotoxicity'] = (
-            np.clip(np.nan_to_num(df_obs['LDH_IC10_uM'] / df_obs[cmax_col], nan=300), 1, 300)
+            np.clip(np.nan_to_num(df_obs['LDH_IC10_uM'] / df_obs[cmax_col], nan=vmax), 1, vmax)
             if 'LDH_IC10_uM' in df_obs.columns
-            else 300
+            else vmax
         )
 
         df_obs['MOS_Transcriptomics'] = (
-            np.clip(np.nan_to_num(df_obs['First_DILI_uM'] / df_obs[cmax_col], nan=300), 1, 300)
+            np.clip(np.nan_to_num(df_obs['First_DILI_uM'] / df_obs[cmax_col], nan=vmax), 1, vmax)
             if 'First_DILI_uM' in df_obs.columns
-            else 300
+            else vmax
         )
 
         # Calculate the final MOS by taking the minimum across MOS_Cmax, MOS_LDH, and MOS_RNA
