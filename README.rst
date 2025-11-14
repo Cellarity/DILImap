@@ -7,7 +7,7 @@ It features RNA-seq profiles from primary human hepatocytes exposed to 300 diver
 **ToxPredictor**, trained on DILImap, sets a new benchmark in DILI risk assessment. With 88% sensitivity at 100% specificity,
 it outperforms traditional methods and reliably flags even the most elusive DILI-prone drugs, including withdrawn and idiosyncratic compounds.
 
-**Publication**: [Bergen et al. A large-scale human toxicogenomics resource for drug-induced liver injury prediction. Nat Commun 16, 9860 (2025).](https://doi.org/10.1038/s41467-025-65690-3)
+**Publication**: `Bergen et al. A large-scale human toxicogenomics resource for drug-induced liver injury prediction. Nat Commun 16, 9860 (2025) <https://doi.org/10.1038/s41467-025-65690-3>`_
 
 .. image:: https://github.com/user-attachments/assets/bbe2af70-c8ee-4fe1-8448-0858b9d1dd09
    :width: 724
