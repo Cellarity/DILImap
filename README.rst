@@ -4,8 +4,10 @@ DILImap & ToxPredictor
 **DILImap** is a pioneering toxicogenomics atlas purpose-built for modeling Drug-Induced Liver Injury (DILI).
 It features RNA-seq profiles from primary human hepatocytes exposed to 300 diverse compounds. It offers a powerful foundation for mechanistic insight and predictive modeling.
 
-**ToxPredictor**, trained on DILImap, sets a new benchmark in DILI risk assessment. With 89% sensitivity at 100% specificity,
+**ToxPredictor**, trained on DILImap, sets a new benchmark in DILI risk assessment. With 88% sensitivity at 100% specificity,
 it outperforms traditional methods and reliably flags even the most elusive DILI-prone drugs, including withdrawn and idiosyncratic compounds.
+
+**Publication**: [Bergen et al. A large-scale human toxicogenomics resource for drug-induced liver injury prediction. Nat Commun 16, 9860 (2025).](https://doi.org/10.1038/s41467-025-65690-3)
 
 .. image:: https://github.com/user-attachments/assets/bbe2af70-c8ee-4fe1-8448-0858b9d1dd09
    :width: 724
@@ -17,7 +19,6 @@ Usage & Support
 - **Installation**: Install using :code:`pip install dilimap`
 
 - **Documentation & Notebooks**: Visit `dilimap.org <https://dilimap.org/>`_ for detailed usage instructions and reproducibility notebooks.
-  *(Note: Access is restricted — see manuscript for the tokenized link.)*
 
 - **Support**: Reach out at `DILImap@cellarity.com <mailto:DILImap@cellarity.com>`_ with any questions or feedback.
 
