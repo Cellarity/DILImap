@@ -1,4 +1,4 @@
-from .s3 import read
+from .s3 import read, PROPRIETARY_REGISTRY
 import warnings
 import anndata as ad
 
@@ -63,8 +63,14 @@ def DILImap_training_data(level='pathways'):
     """
     if level not in ['counts', 'deseq2', 'pathways']:
         raise ValueError(f"must be one of ['counts', 'deseq2', 'pathways'], got {level}")
-    name = 'public/data' if level == 'pathways' else 'proprietary/data'
-    return read(f'training_data_{level}.h5ad', package_name=name)
+    if level == 'pathways':
+        return read(f'training_data_{level}.h5ad', package_name='public/data')
+    else:
+        return read(
+            f'training_data_{level}.h5ad',
+            package_name='dilimap/data',
+            registry=PROPRIETARY_REGISTRY,
+        )
 
 
 def DILImap_validation_data(level='pathways'):

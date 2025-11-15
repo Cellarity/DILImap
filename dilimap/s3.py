@@ -10,12 +10,17 @@ import joblib
 import pandas as pd
 import anndata as ad
 import quilt3
-import boto3
 import shutil
+import boto3
+from botocore import UNSIGNED
+from botocore.client import Config
 from pathlib import Path
 from dotenv import load_dotenv
 from getpass import getpass
 from typing import Any, Callable, Dict, Optional
+
+
+PROPRIETARY_REGISTRY = 's3://compbio-analysis-prod'
 
 
 def login():
@@ -36,7 +41,7 @@ def login():
 
     # Try validating credentials
     try:
-        list_files()
+        list_files(prefix='dilimap/', registry=PROPRIETARY_REGISTRY)
     except Exception as e:
         print(f"That didn't work. {e}. Try again.")
         os.environ.pop('AWS_ACCESS_KEY_ID', None)
@@ -59,11 +64,14 @@ def list_files(registry='s3://dilimap', prefix='public/'):
 
     bucket_name = registry.replace('s3://', '').strip('/')
 
-    session = boto3.Session(
-        aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
-        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
-    )
-    s3 = session.client('s3')
+    if prefix.startswith('public/'):
+        s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+    else:
+        session = boto3.Session(
+            aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+        )
+        s3 = session.client('s3')
 
     response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
 
@@ -85,14 +93,15 @@ def read(filename, package_name='public/data', registry='s3://dilimap', **kwargs
 
     Args:
         filename (str): The name of the file within the package.
-        package_name (str, optional): The name of the package, e.g., 'public/data', 'public/model' or 'propietary/data'
+        package_name (str, optional): The name of the package, e.g., 'public/data', 'public/model' or 'dilimap/data'
         registry (str, optional): The S3 registry where the package is stored. Defaults to 's3://dilimap'.
         **kwargs: Additional arguments passed to the `load_file` method.
 
     Returns:
         File contents loaded from the specified filename.
     """
-    login()
+    if registry == PROPRIETARY_REGISTRY:
+        login()
 
     lqp = QuiltPackage(name=package_name, registry=registry)
     return lqp.load_file(filename, **kwargs)
