@@ -20,6 +20,9 @@ from getpass import getpass
 from typing import Any, Callable, Dict, Optional
 
 
+PROPRIETARY_REGISTRY = 's3://compbio-analysis-prod'
+
+
 def login():
     """
     Load AWS credentials from .env file or prompt interactively if missing.
@@ -38,7 +41,7 @@ def login():
 
     # Try validating credentials
     try:
-        list_files(prefix='proprietary/')
+        list_files(prefix='dilimap/', registry=PROPRIETARY_REGISTRY)
     except Exception as e:
         print(f"That didn't work. {e}. Try again.")
         os.environ.pop('AWS_ACCESS_KEY_ID', None)
@@ -90,14 +93,14 @@ def read(filename, package_name='public/data', registry='s3://dilimap', **kwargs
 
     Args:
         filename (str): The name of the file within the package.
-        package_name (str, optional): The name of the package, e.g., 'public/data', 'public/model' or 'propietary/data'
+        package_name (str, optional): The name of the package, e.g., 'public/data', 'public/model' or 'dilimap/data'
         registry (str, optional): The S3 registry where the package is stored. Defaults to 's3://dilimap'.
         **kwargs: Additional arguments passed to the `load_file` method.
 
     Returns:
         File contents loaded from the specified filename.
     """
-    if 'proprietary' in package_name:
+    if registry == PROPRIETARY_REGISTRY:
         login()
 
     lqp = QuiltPackage(name=package_name, registry=registry)
