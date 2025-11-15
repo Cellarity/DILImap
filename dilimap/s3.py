@@ -49,7 +49,6 @@ def login():
             print(f"Credentials in environment didn't work ({e}). Please enter new ones.")
             os.environ['AWS_ACCESS_KEY_ID'] = getpass('Enter AWS Access Key ID: ')
             os.environ['AWS_SECRET_ACCESS_KEY'] = getpass('Enter AWS Secret Access Key: ')
-            prompted = True
             # Try again once after prompting
             try:
                 list_files(prefix='dilimap/', registry=PROPRIETARY_REGISTRY)
