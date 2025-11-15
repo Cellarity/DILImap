@@ -53,7 +53,7 @@ def login():
             try:
                 list_files(prefix='dilimap/', registry=PROPRIETARY_REGISTRY)
             except Exception as e2:
-                print(f"That didn't work. {e2}.")
+                print(f"That didn't work. {e2}. Try again.")
                 os.environ.pop('AWS_ACCESS_KEY_ID', None)
                 os.environ.pop('AWS_SECRET_ACCESS_KEY', None)
         else:
