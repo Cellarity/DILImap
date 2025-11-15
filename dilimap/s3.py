@@ -33,19 +33,33 @@ def login():
     if not os.getenv('AWS_ACCESS_KEY_ID') or not os.getenv('AWS_SECRET_ACCESS_KEY'):
         load_dotenv()
 
+    prompted = False
     # Prompt if not set
     if not os.getenv('AWS_ACCESS_KEY_ID') or not os.getenv('AWS_SECRET_ACCESS_KEY'):
         print('AWS credentials not found in environment or .env file.')
         os.environ['AWS_ACCESS_KEY_ID'] = getpass('Enter AWS Access Key ID: ')
         os.environ['AWS_SECRET_ACCESS_KEY'] = getpass('Enter AWS Secret Access Key: ')
-
+        prompted = True
     # Try validating credentials
     try:
         list_files(prefix='dilimap/', registry=PROPRIETARY_REGISTRY)
     except Exception as e:
-        print(f"That didn't work. {e}. Try again.")
-        os.environ.pop('AWS_ACCESS_KEY_ID', None)
-        os.environ.pop('AWS_SECRET_ACCESS_KEY', None)
+        if not prompted:
+            # Env vars existed but didn't work — prompt once
+            print(f"Credentials in environment didn't work ({e}). Please enter new ones.")
+            os.environ['AWS_ACCESS_KEY_ID'] = getpass('Enter AWS Access Key ID: ')
+            os.environ['AWS_SECRET_ACCESS_KEY'] = getpass('Enter AWS Secret Access Key: ')
+            # Try again once after prompting
+            try:
+                list_files(prefix='dilimap/', registry=PROPRIETARY_REGISTRY)
+            except Exception as e2:
+                print(f"That didn't work. {e2}. Try again.")
+                os.environ.pop('AWS_ACCESS_KEY_ID', None)
+                os.environ.pop('AWS_SECRET_ACCESS_KEY', None)
+        else:
+            print(f"That didn't work. {e}. Try again.")
+            os.environ.pop('AWS_ACCESS_KEY_ID', None)
+            os.environ.pop('AWS_SECRET_ACCESS_KEY', None)
 
 
 def list_files(registry='s3://dilimap', prefix='public/'):
