@@ -1,5 +1,5 @@
 ci:
-  autoupdate_schedule: off
+  autoupdate_schedule: quarterly
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version
